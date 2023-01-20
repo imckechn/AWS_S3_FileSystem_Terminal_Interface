@@ -65,12 +65,13 @@ while(connected):
             else:
                 print("Directory does not exist")
 
-        elif userInput[:5] == "mkdir":
-            if userInput[6:] in bucketNames:
-                print("Bucket already exists")
+        elif "create_bucket" in userInput:
+            values= userInput.split("/")
+            if values[1] in bucketNames:
+                print("Failure: Bucket already exists")
 
             else:
-                create_bucket(userInput[6:], "ca-central-1")
+                create_bucket(s3, values[1])
         else:
             print("Command not recognized")
 
@@ -97,3 +98,4 @@ while(connected):
 # cd cis4010-a1-ianmckechnie
 # locs3cp upload/temp.txt /cis4010-a1-ianmckechnie/temp.txt
 # s3loccp /cis4010-a1-ianmckechnie/temp.txt downloaded/temp.txt
+# create_bucket/cis4010b01-ianmckechnie

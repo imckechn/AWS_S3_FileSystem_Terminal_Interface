@@ -1,21 +1,11 @@
 
 import boto3
 
-def create_bucket(bucket_name, region=None):
-
-    # Create bucket
+def create_bucket(s3, bucket_name):
     try:
-        if region is None:
-            s3_client = boto3.client('s3')
-            s3_client.create_bucket(Bucket=bucket_name)
-        else:
-            s3_client = boto3.client('s3', region_name=region)
-            location = {'LocationConstraint': region}
-            s3_client.create_bucket(Bucket=bucket_name,
-                                    CreateBucketConfiguration=location)
+        s3.create_bucket(Bucket=bucket_name)
     except:
-        return False
-    return True
+        print("Failed to create bucket")
 
 # Function to upload a file to S3
 # Params: s3 is the boto3 s3 client, local_file is the path to the file to upload, aws_file_name is the bucket name and name of the file on S3 (like a path)
@@ -26,10 +16,6 @@ def upload_file(s3, local_file, aws_file_name):
         response = s3.upload_file(local_file, aws_info[1], aws_info[2])
     except:
         print("failed to upload file, " + response)
-        return
-
-    print("Succeeded in uploading file")
-    return
 
 # Function to download a file from S3
 # Params: s3 is the boto3 s3 client, local_file is the path to where the file will be downloaded from, aws_file_name is the bucket name and name of the file on S3 (like a path)
@@ -40,8 +26,3 @@ def download_file(s3, aws_file_name, local_file):
         response = s3.download_file(aws_info[1], aws_info[2], local_file)
     except:
         print("failed to download file, " + response)
-        return
-
-    print("Succeeded in downloading file")
-    return
-
