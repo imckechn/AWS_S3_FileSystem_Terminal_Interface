@@ -1,6 +1,8 @@
 
 import boto3
 
+# Function to create a bucket
+# Params: s3 is the boto3 s3 client, bucket_name is the name of the bucket to create
 def create_bucket(s3, bucket_name):
     try:
         s3.create_bucket(Bucket=bucket_name)

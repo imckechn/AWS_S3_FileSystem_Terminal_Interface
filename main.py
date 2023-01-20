@@ -36,7 +36,8 @@ except:
     print("Please review procedures for authenticating your account on AWS S3")
     quit()
 
-currentBucket = None
+directory = []
+folders = []
 bucketNames = []
 response = s3.list_buckets()
 for bucket in response['Buckets']:
@@ -49,34 +50,30 @@ while(connected):
         print("Goodbye")
         quit()
 
-    if currentBucket == None:
+    if "create_bucket" in userInput:
+        values= userInput.split("/")
+        if values[1] in bucketNames:
+            print("Failure: Bucket already exists")
+
+        else:
+            create_bucket(s3, values[1])
+
+    if len(directory) == 0:
 
         if userInput == 'list':
             for name in bucketNames:
                 print(name)
 
-        elif userInput[:2] == "cd":
-            if userInput[3:] == "..":
-                print("Cannot go back")
-
-            if userInput[3:] in bucketNames:
-                print("Changing to bucket: " + userInput[3:])
-                currentBucket = userInput[3:]
-            else:
-                print("Directory does not exist")
-
-        elif "create_bucket" in userInput:
-            values= userInput.split("/")
+        if "cd" in userInput:
+            values = userInput.split(" ")
             if values[1] in bucketNames:
-                print("Failure: Bucket already exists")
-
+                directory.append(values[1])
+                print("Directory changed to: " + values[1])
             else:
-                create_bucket(s3, values[1])
-        else:
-            print("Command not recognized")
+                print("Failure: Directory does not exist")
 
-
-    elif currentBucket:
+    else:
+        print("Here")
         if userInput == "ls":
             files = os.listdir('.')
             for filename in files:
@@ -90,6 +87,33 @@ while(connected):
             values= userInput.split(" ")
             download_file(s3, values[1], values[2])
 
+        if "create_folder" in userInput:
+            values = userInput.split("/")
+            path = userInput[len("create_folder/"):]
+
+            #identify if it's a fill or relative path
+            if values[1] in bucketNames:    #full path
+                if path in folders:
+                    print("Failure: Folder already exists")
+                else:
+                    folders.append(path)
+
+            else:   # Relative path
+                current_path = ""
+                for folder in directory:
+                    current_path += folder + "/"
+
+                folders.append(current_path + path)
+
+            print("Current folders: ")
+            print(folders)
+
+            print("Current directory: ")
+            print(directory)
+
+
+
+
 
 
 
@@ -99,3 +123,7 @@ while(connected):
 # locs3cp upload/temp.txt /cis4010-a1-ianmckechnie/temp.txt
 # s3loccp /cis4010-a1-ianmckechnie/temp.txt downloaded/temp.txt
 # create_bucket/cis4010b01-ianmckechnie
+
+# create_folder/temp
+# create_folder/temp2/temp3
+# create_folder/cis4010-a1-ianmckechnie/temp3
