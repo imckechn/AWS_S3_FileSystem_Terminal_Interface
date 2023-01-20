@@ -40,6 +40,7 @@ directory = []
 folders = []
 bucketNames = []
 response = s3.list_buckets()
+
 for bucket in response['Buckets']:
     bucketNames.append(bucket["Name"])
 
@@ -73,26 +74,25 @@ while(connected):
                 print("Failure: Directory does not exist")
 
     else:
-        print("Here")
         if userInput == "ls":
             files = os.listdir('.')
             for filename in files:
                 print(filename)
 
         if "locs3cp" in userInput:
-            values= userInput.split(" ")
+            values = userInput.split(" ")
             upload_file(s3, values[1], values[2])
 
         if "s3loccp" in userInput:
-            values= userInput.split(" ")
+            values = userInput.split(" ")
             download_file(s3, values[1], values[2])
 
         if "create_folder" in userInput:
-            values = userInput.split("/")
+            path_values = userInput.split("/")
             path = userInput[len("create_folder/"):]
 
             #identify if it's a fill or relative path
-            if values[1] in bucketNames:    #full path
+            if path_values[1] in bucketNames:    #full path
                 if path in folders:
                     print("Failure: Folder already exists")
                 else:
@@ -105,11 +105,50 @@ while(connected):
 
                 folders.append(current_path + path)
 
-            print("Current folders: ")
-            print(folders)
+        if "chlocn" in userInput:
+            # Identify if the user is trying to go backwards
+            if userInput == "chlocn /" or userInput == "chlocn ~":
+                directory = []
 
-            print("Current directory: ")
-            print(directory)
+            elif userInput == "chlocn ..":
+                directory.pop()
+
+            elif userInput == "chlocn ":
+                continue
+
+            else:
+                old_directory = directory.copy()
+
+                userInput = userInput[len("chlocn "):]
+                path_values = userInput.split("/")
+                if path_values[0] == '':
+                    path_values.pop(0)
+
+                #identify if it's a fill or relative path
+                if path_values[0] in bucketNames:    #full path
+                    if path in folders:
+                        for i in range(len(directory), len(path_values)):
+                            if path_values[i] == "..":
+                                directory.pop()
+                            else:
+                                directory.append(path_values[i])
+
+                else:  # Relative path
+                    for folder in path_values:
+                        if folder == "..":
+                            directory.pop()
+                        else:
+                            directory.append(folder)
+
+                #Check that the current directory exists
+                cur_der = ""
+                for fold in directory:
+                    cur_der += fold + "/"
+
+                cur_der = cur_der[:-1]  #Pop the last '/' off
+
+                if cur_der not in folders:
+                    directory = old_directory
 
 
 
@@ -117,8 +156,7 @@ while(connected):
 
 
 
-
-#HERLPS
+# HELPERS
 # cd cis4010-a1-ianmckechnie
 # locs3cp upload/temp.txt /cis4010-a1-ianmckechnie/temp.txt
 # s3loccp /cis4010-a1-ianmckechnie/temp.txt downloaded/temp.txt
@@ -127,3 +165,10 @@ while(connected):
 # create_folder/temp
 # create_folder/temp2/temp3
 # create_folder/cis4010-a1-ianmckechnie/temp3
+
+# chlocn /temp
+# chlocn /
+# chlocn ..
+# chlocn ../..
+# chlocn /temp2
+# chlocn ../temp2/temp3
