@@ -1,1 +1,5 @@
 S5-S3.conf
+/__pycache__
+.DS_Store
+/downloaded
+/upload

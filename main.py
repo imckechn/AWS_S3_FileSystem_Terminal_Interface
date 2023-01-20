@@ -43,50 +43,56 @@ for bucket in response['Buckets']:
     bucketNames.append(bucket["Name"])
 
 while(connected):
-    val = input("S5> ")
+    input = input("S5> ")
 
-    if val == "exit" or val == 'quit':
+    if input == "exit" or input == 'quit':
         print("Goodbye")
         quit()
 
     if currentBucket == None:
 
-        if val == 'ls':
+        if input == 'list':
             for name in bucketNames:
                 print(name)
 
-        elif val[:2] == "cd":
-            if val[3:] == "..":
+        elif input[:2] == "cd":
+            if input[3:] == "..":
                 print("Cannot go back")
 
-            if val[3:] in bucketNames:
-                print("Changing to bucket: " + val[3:])
-                currentBucket = val[3:]
+            if input[3:] in bucketNames:
+                print("Changing to bucket: " + input[3:])
+                currentBucket = input[3:]
             else:
                 print("Directory does not exist")
 
-        elif val[:5] == "mkdir":
-            if val[6:] in bucketNames:
+        elif input[:5] == "mkdir":
+            if input[6:] in bucketNames:
                 print("Bucket already exists")
 
             else:
-                create_bucket(val[6:], "ca-central-1")
+                create_bucket(input[6:], "ca-central-1")
         else:
             print("Command not recognized")
 
 
     elif currentBucket:
-        if val == "ls":
+        if input == "ls":
             files = os.listdir('.')
             for filename in files:
                 print(filename)
 
-        if "locs3cp" in val:
-            values= val.split(" ")
+        if "locs3cp" in input:
+            values= input.split(" ")
             upload_file(s3, values[1], values[2])
 
+        if "s3loccp" in input:
+            values= input.split(" ")
+            download_file(s3, values[1], values[2])
 
 
 
 
 
+#HERLPS
+# cd cis4010-a1-ianmckechnie
+# locs3cp test/temp.txt /cis4010-a1-ianmckechnie/temp.txt

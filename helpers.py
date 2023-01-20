@@ -2,15 +2,6 @@
 import boto3
 
 def create_bucket(bucket_name, region=None):
-    """Create an S3 bucket in a specified region
-
-    If a region is not specified, the bucket is created in the S3 default
-    region (us-east-1).
-
-    :param bucket_name: Bucket to create
-    :param region: String region to create bucket in, e.g., 'us-west-2'
-    :return: True if bucket created, else False
-    """
 
     # Create bucket
     try:
@@ -26,14 +17,33 @@ def create_bucket(bucket_name, region=None):
         return False
     return True
 
-def upload_file(s3, file_name, aws_file_name):
+# Function to upload a file to S3
+# Params: s3 is the boto3 s3 client, local_file is the path to the file to upload, aws_file_name is the bucket name and name of the file on S3 (like a path)
+# Returns True on Success, False on Failure
+def upload_file(s3, local_file, aws_file_name):
+    aws_info = aws_file_name.split("/") #It's a three-tuple for some reason with index 0 being an empty string
 
-    f = open(file_name, "r")
-    txt_data = f.read()
+    try:
+        response = s3.upload_file(local_file, aws_info[1], aws_info[2])
+    except:
+        print("failed to upload file, " + response)
+        return False
 
-    object = s3.Object(bucket_name, aws_file_name)
-
-    result = object.put(Body=txt_data)
-    print(result)
-
+    print("Succeeded in uploading file")
     return True
+
+# Function to download a file from S3
+# Params: s3 is the boto3 s3 client, local_file is the path to where the file will be downloaded from, aws_file_name is the bucket name and name of the file on S3 (like a path)
+# Returns True on Success, False on Failure
+def download_file(s3, local_file, aws_file_name):
+    aws_info = aws_file_name.split("/") #It's a three-tuple for some reason with index 0 being an empty string
+
+    try:
+        response = s3.download_file(aws_info[1], aws_info[2], local_file)
+    except:
+        print("failed to download file, " + response)
+        return False
+
+    print("Succeeded in downloading file")
+    return True
+
