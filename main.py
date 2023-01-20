@@ -73,6 +73,15 @@ while(connected):
             else:
                 print("Failure: Directory does not exist")
 
+    if userInput[:6] == "cwlocn":
+        if directory == []:
+            print("/")
+        else:
+            path = ""
+            for folder in directory:
+                path += "/" + folder
+            print(path)
+
     else:
         if userInput == "ls":
             files = os.listdir('.')
