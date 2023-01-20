@@ -24,7 +24,7 @@ try:
     connected = True
 
     buckets = []
-    response = s3.list_buckets ()
+    response = s3.list_buckets()
     for bucket in response['Buckets']:
         buckets.append(bucket [ "Name" ])
 
@@ -60,11 +60,6 @@ while(connected):
             create_bucket(s3, values[1])
 
     if len(directory) == 0:
-
-        if userInput == 'list':
-            for name in bucketNames:
-                print(name)
-
         if "cd" in userInput:
             values = userInput.split(" ")
             if values[1] in bucketNames:
@@ -72,6 +67,9 @@ while(connected):
                 print("Directory changed to: " + values[1])
             else:
                 print("Failure: Directory does not exist")
+
+            print("Directory changed to: ")
+            print(directory)
 
     if userInput[:6] == "cwlocn":
         if directory == []:
@@ -81,6 +79,49 @@ while(connected):
             for folder in directory:
                 path += "/" + folder
             print(path)
+
+    if userInput[:4] == "list":
+        if userInput == "list":
+            if directory == []: #If you're in the home directory, list the buckets
+                for name in bucketNames:
+                    print(name)
+
+            else:   #if you in a bucket or a bucket and a folder, list the contents of your spot
+                print("HERE")
+                bucket = s3_res.Bucket(directory[0])
+
+                print("Raw objects:")
+                for obj in bucket.objects.all():
+                    print(obj)
+                    name = obj.key
+                    elems = name.split("/")
+                    match = True
+                    for i in range(len(elems) - 1):
+                        if elems[i] != directory[i + 1]:
+                            match = False
+                            break
+
+                    print("Matches:")
+                    if match:
+                        print(elems[len(elems) - 1])
+
+
+        elif userInput[6:7] == "-I":
+            continue
+
+        else:
+            print("HERE")
+            values = userInput.split("/")
+            print(values)
+
+            if values[1] in bucketNames: #It's an absolute path
+                bucket = s3_res.Bucket(values[1])
+            else: #it's a relative path
+                bucket = s3_res.Bucket(directory[0])
+
+            for obj in bucket.objects.all():
+                print(obj)
+
 
     else:
         if userInput == "ls":
@@ -161,13 +202,9 @@ while(connected):
 
 
 
-
-
-
-
 # HELPERS
 # cd cis4010-a1-ianmckechnie
-# locs3cp upload/temp.txt /cis4010-a1-ianmckechnie/temp.txt
+# locs3cp upload/temp2/temp2.txt /cis4010-a1-ianmckechnie/temp.txt
 # s3loccp /cis4010-a1-ianmckechnie/temp.txt downloaded/temp.txt
 # create_bucket/cis4010b01-ianmckechnie
 
@@ -181,3 +218,5 @@ while(connected):
 # chlocn ../..
 # chlocn /temp2
 # chlocn ../temp2/temp3
+
+# list /cis4010/images/cats
