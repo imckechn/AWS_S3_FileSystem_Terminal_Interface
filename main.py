@@ -87,10 +87,8 @@ while(connected):
                     print(name)
 
             else:   #if you in a bucket or a bucket and a folder, list the contents of your spot
-                print("HERE")
                 bucket = s3_res.Bucket(directory[0])
 
-                print("Raw objects:")
                 for obj in bucket.objects.all():
                     print(obj)
                     name = obj.key
@@ -105,12 +103,29 @@ while(connected):
                     if match:
                         print(elems[len(elems) - 1])
 
+                    duplicates = []
+
+                    #Now going to print the avalible folders
+                    for elem in folders:
+                        components = elem.split("/")
+
+                        #Make sure there's no duplicate directories being printed
+                        if len(directory) <= len(components) and components[len(directory)] not in duplicates:
+                            areEqual = True
+                            for i in range(len(directory)):
+                                if components[i] != directory[i]:   #Make sure the directory and the current folder matches
+                                    areEqual ==  False
+
+                            #If there is a folder in the current directory, print the next folder name
+                            if areEqual:
+                                duplicates.append(components[len(directory)])
+                                print(components[len(directory)] + "/")
+
 
         elif userInput[6:7] == "-I":
             continue
 
         else:
-            print("HERE")
             values = userInput.split("/")
             print(values)
 
