@@ -3,12 +3,24 @@ import boto3
 
 class File:
 
-    def __init__(self, bucket, path, name, s3, localFile):
-        self.path = path
-        self.name = name
-        self.bucket = bucket
+    #def __init__(self, bucket, path, name, s3, localFile):
+    #    self.path = path
+    #    self.name = name
+    #    self.bucket = bucket
 
-        upload_file(s3, localFile, path + "/" + name)
+    #    upload_file(s3, localFile, path + "/" + name)
+
+    def init_from_s3(self, name):
+        self.bucket = name.bucket_name
+
+        elements = name.key.split("/")
+        self.name = elements[-1]
+
+        path = ""
+        for i in range(len(elements) - 1):
+            path += elements[i] + "/"
+
+        self.path = path
 
     def __str__(self):
         return self.bucket + "/" + self.path + "/" + self.name

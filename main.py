@@ -4,6 +4,10 @@ import sys
 import pathlib
 import boto3
 from helpers import create_bucket, download_file, upload_file
+from folder import Folder
+from file import File
+from bucket import Bucket
+
 
 config = configparser.ConfigParser()
 config.read("S5-S3.conf")
@@ -11,6 +15,7 @@ aws_access_key_id = config['prof' ]['aws_access_key_id' ]
 aws_secret_access_key = config['prof']['aws_secret_access_key']
 connected = False
 
+#Try making a connection to S3 using boto3
 try:
     session = boto3.Session(
         aws_access_key_id=aws_access_key_id,
@@ -26,23 +31,92 @@ try:
     buckets = []
     response = s3.list_buckets()
     for bucket in response['Buckets']:
+
         buckets.append(bucket [ "Name" ])
 
-    for bucket in buckets:
-        print ( bucket )
 except:
     print("Welcome to the AWS S3 Storage Shell(S5)")
     print("You could not be connected to your S3 storage")
     print("Please review procedures for authenticating your account on AWS S3")
     quit()
 
-directory = []
-folders = []
-bucketNames = []
-response = s3.list_buckets()
 
+#Get all the buckets and store them in memory
+buckets = []
 for bucket in response['Buckets']:
-    bucketNames.append(bucket["Name"])
+    buck = Bucket(bucket["Name"])
+    buckets.append(buck)
+
+#Get all the files and store them in memory
+files = []
+for bucket in buckets:
+
+    #Get the buckets in the S3 storage from the names we already have
+    s3_bucket = s3_res.Bucket(bucket.get_name())
+
+    #Loop through the objects in the bucket and create a file object for each one
+    objects = s3_bucket.objects.all()
+    for elem in objects:
+        file = File()
+        file.init_from_s3(elem)
+        files.append(file)
+
+#Get the folders from the files and store them in memory
+folders = []
+for file in files:
+
+    #Create folders from the files
+    bucket = file.get_bucket()
+    full_path = file.get_path()
+
+    broken_up_path = full_path.split("/")
+    broken_up_path.insert(0, "")
+
+    #Loop through each folder one at a time
+    for i in range(len(broken_up_path) - 1):
+
+        #Create a folder starting at the root and going down
+        path = ""
+        for j in range(i):
+            path += broken_up_path[j] + "/"
+        new_folder = Folder(file.get_bucket(), path)
+
+        #Check if a folder aleady exists
+        for folder in folders:
+            if folder.get_path() == new_folder.get_path() and folder.get_bucket() == new_folder.get_bucket():
+                new_folder = None
+                break
+
+    folders.append(new_folder)
+
+directory = []
+
+while(userInput != "exit" or userInput != 'quit'):
+    userInput = input("S5> ")
+
+    if "create_bucket" in userInput:
+        values= userInput.split("/")
+
+        exists = False
+        for bucket in buckets:
+            if bucket.get_name() == values[1]:
+                print("Failure: Bucket already exists")
+                exists = True
+                break
+
+        if exists == False:
+            try:
+                create_bucket(s3, values[1])
+                buck = Bucket(values[1])
+                buckets.append(buck)
+            except:
+                print("Failure: Could not create bucket")
+
+    
+print("Goodbye")
+exit()
+
+
 
 while(connected):
     userInput = input("S5> ")
@@ -57,13 +131,6 @@ while(connected):
         print("Goodbye")
         quit()
 
-    if "create_bucket" in userInput:
-        values= userInput.split("/")
-        if values[1] in bucketNames:
-            print("Failure: Bucket already exists")
-
-        else:
-            create_bucket(s3, values[1])
 
     if len(directory) == 0:
         if "cd" in userInput:
