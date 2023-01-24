@@ -47,6 +47,12 @@ for bucket in response['Buckets']:
 while(connected):
     userInput = input("S5> ")
 
+    if userInput == "dir":
+        print("Directory")
+        print(directory)
+        print("folders")
+        print(folders)
+
     if userInput == "exit" or userInput == 'quit':
         print("Goodbye")
         quit()
@@ -67,9 +73,6 @@ while(connected):
                 print("Directory changed to: " + values[1])
             else:
                 print("Failure: Directory does not exist")
-
-            print("Directory changed to: ")
-            print(directory)
 
     if userInput[:6] == "cwlocn":
         if directory == []:
@@ -94,10 +97,14 @@ while(connected):
                     name = obj.key
                     elems = name.split("/")
                     match = True
-                    for i in range(len(elems) - 1):
-                        if elems[i] != directory[i + 1]:
-                            match = False
-                            break
+
+                    if len(elems) <= len(directory):
+                        for i in range(len(elems) - 1):
+                            if elems[i] != directory[i + 1]:
+                                match = False
+                                break
+                    else:
+                        match = False
 
                     print("Matches:")
                     if match:
@@ -105,21 +112,29 @@ while(connected):
 
                     duplicates = []
 
+                    print("Folders")
+                    print(folders)
+
                     #Now going to print the avalible folders
                     for elem in folders:
                         components = elem.split("/")
 
-                        #Make sure there's no duplicate directories being printed
-                        if len(directory) <= len(components) and components[len(directory)] not in duplicates:
-                            areEqual = True
-                            for i in range(len(directory)):
-                                if components[i] != directory[i]:   #Make sure the directory and the current folder matches
-                                    areEqual ==  False
+                        #Make sure the lenght of the folder path is at least as long as the length of the current directory path
+                        if len(directory) >= len(components):
 
-                            #If there is a folder in the current directory, print the next folder name
-                            if areEqual:
-                                duplicates.append(components[len(directory)])
-                                print(components[len(directory)] + "/")
+                            #Make sure there's no duplicate directories being printed
+                            if components[len(directory)] not in duplicates:
+                                areEqual = True
+
+                                #Loop through the component parts and make sure they are equal to the current directory and are in the same order
+                                for i in range(len(directory)):
+                                    if components[i] != directory[i]:   #Make sure the directory and the current folder matches
+                                        areEqual ==  False
+
+                                #If there is a folder in the current directory, print the next folder name
+                                if areEqual:
+                                    duplicates.append(components[len(directory)])
+                                    print(components[len(directory)] + "/")
 
 
         elif userInput[6:7] == "-I":
@@ -146,7 +161,8 @@ while(connected):
 
         if "locs3cp" in userInput:
             values = userInput.split(" ")
-            upload_file(s3, values[1], values[2])
+            print(values)
+            #upload_file(s3, values[1], values[2])
 
         if "s3loccp" in userInput:
             values = userInput.split(" ")
@@ -212,8 +228,16 @@ while(connected):
 
                 cur_der = cur_der[:-1]  #Pop the last '/' off
 
-                if cur_der not in folders:
+                exists = False
+                for folder in folders:
+                    if cur_der in folder:
+                        exists = True
+                        break
+
+                if exists != True:
                     directory = old_directory
+                    print("Error: Directory doesnt exist")
+
 
 
 
@@ -235,3 +259,10 @@ while(connected):
 # chlocn ../temp2/temp3
 
 # list /cis4010/images/cats
+
+
+#LATEST
+# cd cis4010-a1-ianmckechnie
+# create_folder/temp3
+# create_folder/temp2/temp3
+# chlocn /temp2
