@@ -50,3 +50,16 @@ class File:
             return True
         except :
             return False
+
+    def is_in_directory(self, path):
+        if self.bucket == path[0]:
+            for i in range(1, len(path) - 1):
+                if self.path[i] != path[i]:
+                    return False
+        else:
+            return False
+
+        return True
+
+    def delete(self, s3):
+        s3.Object(self.bucket, self.path + "/" + self.name).delete()

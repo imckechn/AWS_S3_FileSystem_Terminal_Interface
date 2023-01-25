@@ -1,5 +1,5 @@
 # File System that Interacts with AWS
-Written By Ian McKechnie 
+Written By Ian McKechnie
 For CIS4030 Cloud Computing
 
 ## Description
@@ -8,7 +8,7 @@ This program allows the user to interact with the AWS S3 file system. The user c
 Note: The folders are a construct of this terminal they do not exist in the S3 file system. The folders are used to organize the files in the terminal.
 
 ## Installation
-Make sure you have pip or pip3 
+Make sure you have pip or pip3
 
 Install the AWS SDK for Python (Boto3) using pip or pip3
 

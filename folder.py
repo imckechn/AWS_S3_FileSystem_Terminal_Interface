@@ -44,4 +44,18 @@ class Folder:
 
         return success
 
+    def is_in_directory(self, path):
+        if self.bucket == path[0]:
+            for i in range(1, len(path) - 1):
+                if self.path[i] != path[i]:
+                    return False
+        else:
+            return False
+
+        return True
+
+    def print_next_folder(self, path):
+        if len(path) < (len(self.path) - 1):
+            print(self.path[len(path) - 1])
+
 

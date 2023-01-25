@@ -7,3 +7,10 @@ class Bucket:
 
     def get_name(self):
         return self.name
+
+    def delete(self, s3):
+        try:
+            s3.Bucket(self.name).delete()
+            return True
+        except:
+            return False

@@ -3,7 +3,7 @@ import os
 import sys
 import pathlib
 import boto3
-from helpers import create_bucket, download_file, upload_file
+from helpers import create_bucket, download_file, upload_file, checkIfPathDoesntExists
 from folder import Folder
 from file import File
 from bucket import Bucket
@@ -201,7 +201,7 @@ while(userInput != "exit" or userInput != 'quit'):
 
 
 
-        if "locs3cp" in userInput:
+        elif "locs3cp" in userInput:
             values = userInput.split(" ")
 
             ans = upload_file(s3, values[1], values[2])
@@ -213,13 +213,13 @@ while(userInput != "exit" or userInput != 'quit'):
 
 
 
-        if "s3loccp" in userInput:
+        elif "s3loccp" in userInput:
             values = userInput.split(" ")
             download_file(s3, values[1], values[2])
 
 
 
-        if userInput[:13] == "create_folder":
+        elif userInput[:13] == "create_folder":
             path = userInput.split("/")
 
             #identify if it's a fill or relative path
@@ -227,177 +227,25 @@ while(userInput != "exit" or userInput != 'quit'):
             for i in range(len(buckets)):
                 if buckets[i].get_name() == directory[0]:
                     isFullPath = True
-                    new_folder = Folder(path[0], path[1:])
 
-                    # -- Need to add a checker incase the new path is like 6 folders longer than what already exists
-                    folders.append(new_folder)
+                    current_path = ""
+                    for i in range(1, len(path)):
+                        current_path += path[i] + "/"
+                        if checkIfPathDoesntExists(current_path, folders):
+                            new_folder = Folder(path[0], current_path)
+                            folders.append(new_folder)
 
             if isFullPath == False: #it's a relative path
-                
-
-
-            if path[0] in bucketNames:    #full path
-                if path in folders:
-                    print("Failure: Folder already exists")
-                else:
-                    folders.append(path)
-
-            else:   # Relative path
                 current_path = ""
-                for folder in directory:
-                    current_path += folder + "/"
-
-                folders.append(current_path + path)
-
-
-
-    else:
-        print("Error: Command not recognized or you are not in a bucket")
-
-print("Goodbye")
-exit()
-
-# chlocn cis4010-a1-ianmckechnie
+                for i in range(len(path)):
+                    current_path += path[i] + "/"
+                    if checkIfPathDoesntExists(current_path, folders):
+                        new_folder = Folder(directory[0], current_path)
+                        folders.append(new_folder)
 
 
 
-
-while(connected):
-    userInput = input("S5> ")
-
-    if userInput == "dir":
-        print("Directory")
-        print(directory)
-        print("folders")
-        print(folders)
-
-    if userInput == "exit" or userInput == 'quit':
-        print("Goodbye")
-        quit()
-
-
-    if len(directory) == 0:
-        if "cd" in userInput:
-            values = userInput.split(" ")
-            if values[1] in bucketNames:
-                directory.append(values[1])
-                print("Directory changed to: " + values[1])
-            else:
-                print("Failure: Directory does not exist")
-
-    if userInput[:6] == "cwlocn":
-        if directory == []:
-            print("/")
-        else:
-            path = ""
-            for folder in directory:
-                path += "/" + folder
-            print(path)
-
-    if userInput[:4] == "list":
-        if userInput == "list":
-            if directory == []: #If you're in the home directory, list the buckets
-                for name in bucketNames:
-                    print(name)
-
-            else:   #if you in a bucket or a bucket and a folder, list the contents of your spot
-                bucket = s3_res.Bucket(directory[0])
-
-                for obj in bucket.objects.all():
-                    print(obj)
-                    name = obj.key
-                    elems = name.split("/")
-                    match = True
-
-                    if len(elems) <= len(directory):
-                        for i in range(len(elems) - 1):
-                            if elems[i] != directory[i + 1]:
-                                match = False
-                                break
-                    else:
-                        match = False
-
-                    print("Matches:")
-                    if match:
-                        print(elems[len(elems) - 1])
-
-                    duplicates = []
-
-                    print("Folders")
-                    print(folders)
-
-                    #Now going to print the avalible folders
-                    for elem in folders:
-                        components = elem.split("/")
-
-                        #Make sure the lenght of the folder path is at least as long as the length of the current directory path
-                        if len(directory) >= len(components):
-
-                            #Make sure there's no duplicate directories being printed
-                            if components[len(directory)] not in duplicates:
-                                areEqual = True
-
-                                #Loop through the component parts and make sure they are equal to the current directory and are in the same order
-                                for i in range(len(directory)):
-                                    if components[i] != directory[i]:   #Make sure the directory and the current folder matches
-                                        areEqual ==  False
-
-                                #If there is a folder in the current directory, print the next folder name
-                                if areEqual:
-                                    duplicates.append(components[len(directory)])
-                                    print(components[len(directory)] + "/")
-
-
-        elif userInput[6:7] == "-I":
-            continue
-
-        else:
-            values = userInput.split("/")
-            print(values)
-
-            if values[1] in bucketNames: #It's an absolute path
-                bucket = s3_res.Bucket(values[1])
-            else: #it's a relative path
-                bucket = s3_res.Bucket(directory[0])
-
-            for obj in bucket.objects.all():
-                print(obj)
-
-
-    else:
-        if userInput == "ls":
-            files = os.listdir('.')
-            for filename in files:
-                print(filename)
-
-        if "locs3cp" in userInput:
-            values = userInput.split(" ")
-            print(values)
-            #upload_file(s3, values[1], values[2])
-
-        if "s3loccp" in userInput:
-            values = userInput.split(" ")
-            download_file(s3, values[1], values[2])
-
-        if "create_folder" in userInput:
-            path_values = userInput.split("/")
-            path = userInput[len("create_folder/"):]
-
-            #identify if it's a fill or relative path
-            if path_values[1] in bucketNames:    #full path
-                if path in folders:
-                    print("Failure: Folder already exists")
-                else:
-                    folders.append(path)
-
-            else:   # Relative path
-                current_path = ""
-                for folder in directory:
-                    current_path += folder + "/"
-
-                folders.append(current_path + path)
-
-        if "chlocn" in userInput:
+        elif userInput[:6] == "chlocn":
             # Identify if the user is trying to go backwards
             if userInput == "chlocn /" or userInput == "chlocn ~":
                 directory = []
@@ -417,39 +265,113 @@ while(connected):
                     path_values.pop(0)
 
                 #identify if it's a fill or relative path
-                if path_values[0] in bucketNames:    #full path
-                    if path in folders:
-                        for i in range(len(directory), len(path_values)):
-                            if path_values[i] == "..":
-                                directory.pop()
-                            else:
-                                directory.append(path_values[i])
+                isFullPath = False
+                for bucket in buckets:
+                    if bucket.get_name() == path_values[0]:
+                        isFullPath = True
 
-                else:  # Relative path
-                    for folder in path_values:
-                        if folder == "..":
-                            directory.pop()
+                        if checkIfPathDoesntExists(path_values[1:], folders) == False:
+                            directory = path_values
+                            break
                         else:
-                            directory.append(folder)
+                            print("Error: Folder does not exist")
+                if isFullPath == False:
+                    full_path = directory.copy() + path_values
+                    if checkIfPathDoesntExists(full_path, folders) == False:
+                        directory = full_path
 
-                #Check that the current directory exists
-                cur_der = ""
-                for fold in directory:
-                    cur_der += fold + "/"
+                    else:
+                        print("Error: Folder does not exist")
 
-                cur_der = cur_der[:-1]  #Pop the last '/' off
+        elif userInput[:4] == "list":
 
-                exists = False
+            #List the current directory
+            if userInput == "list" or userInput == "list /":
+                #List the files
+                for file in files:
+                    if file.is_in_directory(directory):
+                        file.get_name()
+
+                #List the folders
                 for folder in folders:
-                    if cur_der in folder:
-                        exists = True
+                    if folder.is_in_directory(directory):
+                        folder.print_next_folder(directory)
+
+            elif "-I" in userInput:
+                # ----------- NEEDS TO BE WORKED ON -------------
+                print("TBD")
+
+            else:
+                elements = userInput.split("/")
+                elements.pop(0)
+
+                #List the files
+                for file in files:
+                    for file in files:
+                        if file.is_in_directory(elements):
+                            file.get_name()
+
+                #List the folders
+                for folder in folders:
+                    if folder.is_in_directory(elements):
+                        folder.print_next_folder(elements)
+
+        elif userInput[:6] == "S3copy":
+            parts = userInput.split(" ")
+            starting_location = parts[1]
+            ending_location = parts[2]
+
+            #Change to correct format
+            start = starting_location.split("/")
+            end = ending_location.split("/")
+
+            #add the bucket to the start
+            start.insert(0, directory[0])
+
+            for file in files:
+                if file.is_in_directory(start):
+                    file.set_path(directory[0], end, s3)
+
+        elif userInput[:8] == "s3delete":
+            parts = userInput.split(" ")
+            location = parts[1].split("/")
+
+            if len(location) == 1:
+                #Delete the file
+                for file in files:
+                    if file.get_name() == location[0] and file.get_bucket() == directory[0] and file.is_in_directory(directory):
+                        try:
+                            file.delete(s3)
+                            files.remove(file)
+                        except:
+                            print("Error: Could not delete file")
                         break
+            else:
+                for file in files:
+                    if file.is_in_directory(location):
+                        try:
+                            file.delete(s3)
+                            files.remove(file)
+                        except:
+                            print("Error: Could not delete file")
+        elif userInput[:13] == "delete_bucket":
+            parts = userInput.split(" ")
+            bucket_name = parts[1]
 
-                if exists != True:
-                    directory = old_directory
-                    print("Error: Directory doesnt exist")
+            for bucket in buckets:
+                if bucket.get_name() == bucket_name:
+                    try:
+                        bucket.delete(s3)
+                        buckets.remove(bucket)
+                    except:
+                        print("Error: Could not delete bucket")
+                    break
 
+    else:
+        print("Error: Command not recognized or you are not in a bucket")
 
+print("Goodbye")
+exit()
 
 
 # HELPERS

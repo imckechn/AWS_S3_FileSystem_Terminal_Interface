@@ -30,3 +30,11 @@ def download_file(s3, aws_file_name, local_file):
         response = s3.download_file(aws_info[1], aws_info[2], local_file)
     except:
         print("failed to download file, " + response)
+
+def checkIfPathDoesntExists(path, folders):
+    for folder in folders:
+        if folder.get_path() == path:
+            return False
+        elif folder.get_bucket() + "/" + folder.get_path() == path:
+            return False
+    return True
