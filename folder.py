@@ -3,7 +3,7 @@ import boto3
 class Folder:
 
     def __init__(self, bucket, path):
-        self.path = path
+        self.path = path #Treating path as an array of each folder that is in the path
         self.files = []
         self.bucket = bucket
 

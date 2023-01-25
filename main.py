@@ -89,12 +89,14 @@ for file in files:
 
     folders.append(new_folder)
 
+#The current working directory, this includes the current bucket if applicable
 directory = []
+userInput = ""
 
 while(userInput != "exit" or userInput != 'quit'):
     userInput = input("S5> ")
 
-    if "create_bucket" in userInput:
+    if userInput[:13] == "create_bucket":
         values= userInput.split("/")
 
         exists = False
@@ -112,9 +114,151 @@ while(userInput != "exit" or userInput != 'quit'):
             except:
                 print("Failure: Could not create bucket")
 
-    
+    elif userInput[:6] == "cwlocn":
+        if directory == []:
+            print("/")
+        else:
+            path = ""
+            for folder in directory:
+                path += "/" + folder
+            print(path)
+
+    elif userInput[:6] == "chlocn":
+            # Identify if the user is trying to go backwards
+            if userInput == "chlocn /" or userInput == "chlocn ~":
+                directory = []
+
+            elif userInput == "chlocn ..":
+                directory.pop()
+
+            elif userInput == "chlocn ":
+                print("Error, need to enter in a destination")
+                continue
+
+            else:
+                old_directory = directory.copy()
+
+                userInput = userInput[len("chlocn "):]
+                path_values = userInput.split("/")
+                if path_values[0] == '':
+                    path_values.pop(0)
+
+                #identify if it's a fill or relative path
+                isFullPath = False
+
+                for bucket in buckets:
+                    if bucket.get_name() == path_values[0]:     #it's the full path
+                        isFullPath = True
+                        directory = []
+
+                        #Set the working directory to the one specified by the user
+                        for i in range(len(path_values)):
+                            directory.append(path_values[i])
+
+                if isFullPath == False:  #it's a relative path
+                    for folder in path_values:
+                        if folder == "..":
+                            directory.pop()
+                        else:
+                            directory.append(folder)
+
+                # --- Checking that the current directory exists ---
+
+                # Get the current directory MINUS the bucket
+                cur_der = ""
+                for i in range(1, len(directory)):
+                    cur_der += directory[i] + "/"
+
+
+                cur_der = cur_der[:-1]  #Pop the last '/' off
+
+                print("cur_der: " + cur_der)
+
+                exists = False
+                for folder in folders:
+                    print("folder being checked")
+                    print(folder.get_path()[1:])
+
+                    if folder.get_bucket() == directory[0]: #Check that the bucket matches
+                        if cur_der == folder.get_path():
+                            exists = True
+                            break
+
+                if exists != True:
+                    directory = old_directory
+                    print("Error: Directory doesnt exist")
+
+    elif len(directory) > 0:
+
+        if userInput[:6] == "cwlocn":
+            if directory == []:
+                print("/")
+            else:
+                path = ""
+                for folder in directory:
+                    path += "/" + folder
+                print(path)
+
+
+
+        if "locs3cp" in userInput:
+            values = userInput.split(" ")
+
+            ans = upload_file(s3, values[1], values[2])
+
+            if ans == True:
+                file = File()
+                file.init_from_file_creation(values[2])
+                files.append(file)
+
+
+
+        if "s3loccp" in userInput:
+            values = userInput.split(" ")
+            download_file(s3, values[1], values[2])
+
+
+
+        if userInput[:13] == "create_folder":
+            path = userInput.split("/")
+
+            #identify if it's a fill or relative path
+            isFullPath = False
+            for i in range(len(buckets)):
+                if buckets[i].get_name() == directory[0]:
+                    isFullPath = True
+                    new_folder = Folder(path[0], path[1:])
+
+                    # -- Need to add a checker incase the new path is like 6 folders longer than what already exists
+                    folders.append(new_folder)
+
+            if isFullPath == False: #it's a relative path
+                
+
+
+            if path[0] in bucketNames:    #full path
+                if path in folders:
+                    print("Failure: Folder already exists")
+                else:
+                    folders.append(path)
+
+            else:   # Relative path
+                current_path = ""
+                for folder in directory:
+                    current_path += folder + "/"
+
+                folders.append(current_path + path)
+
+
+
+    else:
+        print("Error: Command not recognized or you are not in a bucket")
+
 print("Goodbye")
 exit()
+
+# chlocn cis4010-a1-ianmckechnie
+
 
 
 
@@ -309,7 +453,6 @@ while(connected):
 
 
 # HELPERS
-# cd cis4010-a1-ianmckechnie
 # locs3cp upload/temp2/temp2.txt /cis4010-a1-ianmckechnie/temp.txt
 # s3loccp /cis4010-a1-ianmckechnie/temp.txt downloaded/temp.txt
 # create_bucket/cis4010b01-ianmckechnie

@@ -16,8 +16,10 @@ def upload_file(s3, local_file, aws_file_name):
 
     try:
         response = s3.upload_file(local_file, aws_info[1], aws_info[2])
+        return True
     except:
         print("failed to upload file, " + response)
+        return False
 
 # Function to download a file from S3
 # Params: s3 is the boto3 s3 client, local_file is the path to where the file will be downloaded from, aws_file_name is the bucket name and name of the file on S3 (like a path)
