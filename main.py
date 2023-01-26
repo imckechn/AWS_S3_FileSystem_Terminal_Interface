@@ -3,7 +3,7 @@ import os
 import sys
 import pathlib
 import boto3
-from helpers import create_bucket, download_file, upload_file, checkIfPathDoesntExists
+from helpers import create_bucket, download_file, upload_file, checkIfPathDoesntExists, FolderInPath
 from folder import Folder
 from file import File
 from bucket import Bucket
@@ -93,9 +93,11 @@ userInput = ""
 print("Available buckets:")
 for bucket in buckets:
     print(bucket.get_name())
-print("\n")
 
 while(userInput != "exit" or userInput != 'quit'):
+    # print("Folders")
+    # for folder in folders:
+    #     print(folder.get_path_as_list())
     userInput = input("S5> ")
 
     #Create a new bucket in s3
@@ -169,69 +171,26 @@ while(userInput != "exit" or userInput != 'quit'):
                                 break
 
                         else:
-                            if checkIfPathDoesntExists(path_values[1:], path_values[0], folders) == False:
+                            if FolderInPath(path_values[1:], path_values[0], folders):
                                 directory = path_values
                                 break
                             else:
                                 print("Error: Folder does not exist")
                             break
 
-                            #Set the working directory to the one specified by the user
-                            for i in range(len(path_values)):
-                                directory.append(path_values[i])
-
                 if isFullPath == False:  #it's a relative path
-                    if checkIfPathDoesntExists(full_path[1:], full_path[0], folders) == False:
+                    full_path = directory.copy() + path_values
+
+                    if FolderInPath(full_path[1:], full_path[0], folders):
                         directory = full_path
 
                     else:
                         print("Error: Folder does not exist")
 
-                # # --- Checking that the current directory exists ---
-                # if len(directory) == 1:
-                #     isValidBucket = False
-                #     for bucket in buckets:
-                #         if bucket.get_name() == directory[0]:
-                #             isValidBucket = True
-                #             break
-
-                #     if isValidBucket == False:
-                #         directory = old_directory
-                #         print("Error: Invalid bucket")
-
-                # else:
-                #     # Get the current directory MINUS the bucket
-                #     cur_der = ""
-                #     for i in range(len(directory)):
-                #         cur_der += directory[i] + "/"
-
-                #     cur_der = cur_der[:-1]  #Pop the last '/' off
-
-                #     exists = False
-                #     for folder in folders:
-                #         if folder.get_bucket() == directory[0]: #Check that the bucket matches
-                #             if cur_der == folder.get_path():
-                #                 exists = True
-                #                 break
-
-                #     if exists != True:
-                #         directory = old_directory
-                #         print("Error: Directory doesnt exist")
 
     elif len(directory) > 0:
 
-        if userInput[:6] == "cwlocn":
-            if directory == []:
-                print("/")
-            else:
-                path = ""
-                for folder in directory:
-                    path += "/" + folder
-                print(path)
-
-
-
-        elif "locs3cp" in userInput:
+        if "locs3cp" in userInput:
             values = userInput.split(" ")
             ans = upload_file(s3, values[1], values[2])
 
@@ -251,6 +210,9 @@ while(userInput != "exit" or userInput != 'quit'):
         elif userInput[:13] == "create_folder":
             path = userInput.split(" ")
             path = path[1].split("/")
+
+            if path[0] == '':
+                path.pop(0)
 
             #identify if it's a fill path
             isFullPath = False
@@ -367,5 +329,5 @@ exit()
 
 # HELPERS
 # chlocn /tempbucketforcisclassguelph
-# create_folder test
-# chlocn /test
+# create_folder /test/temp/hello/world
+# chlocn /test/temp

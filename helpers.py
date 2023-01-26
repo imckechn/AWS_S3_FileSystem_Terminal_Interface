@@ -41,3 +41,19 @@ def checkIfPathDoesntExists(path, bucket, folders):
         if folder.get_bucket() == bucket and folder.get_path_as_list() == path:
             return False
     return True
+
+def FolderInPath(path, bucket, folders):
+    print("Path")
+    print(path)
+    print("Bucket")
+    print(bucket)
+    print("Folders")
+
+
+    for folder in folders:
+        folderList = folder.get_path_as_list()
+        print(folderList)
+
+        if folderList == path and folder.get_bucket() == bucket:
+            return True
+    return False

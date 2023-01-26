@@ -53,18 +53,18 @@ class Folder:
         return success
 
     def is_in_directory(self, path):
-        # print("Directory = ")
-        # print(path)
-        # print("self.path")
-        # print(self.path)
+
 
         #The bucket name should be the first element in the given path
         #The lenth of the current path (only folders, not bucket) should be the same as the given path (which includes the bucket)
         if self.bucket == path[0] and len(self.path) == len(path):
-
+            print("HERE")
             #Minus one because self.path[-1] is the bucket we are trying to get the name of
             for i in range (len(self.path) - 1):
-                if self.path[i] != path[i]:
+                print("Being compared")
+                print(self.path[i])
+                print(path[i + 1])
+                if self.path[i] != path[i + 1]:
                     #print("Failed A")
                     return False
         else:
@@ -74,15 +74,6 @@ class Folder:
         return True
 
     def print_next_folder(self, path):
-        # print("Path")
-        # print(path)
-        # print("path len")
-        # print(len(path))
-        # print("self path")
-        # print(self.path)
-        # print("self path len")
-        # print(len(self.path))
         print(self.path[-1] + "/")
-        #print(self.path[len(path) - 1] + "/")
 
 
