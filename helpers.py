@@ -5,9 +5,9 @@ import boto3
 # Params: s3 is the boto3 s3 client, bucket_name is the name of the bucket to create
 def create_bucket(s3, bucket_name):
     try:
-        s3.create_bucket(Bucket=bucket_name)
+        answer = s3.create_bucket(Bucket=bucket_name)
     except:
-        print("Failed to create bucket")
+        print("Failed to create bucket, " + answer)
 
 # Function to upload a file to S3
 # Params: s3 is the boto3 s3 client, local_file is the path to the file to upload, aws_file_name is the bucket name and name of the file on S3 (like a path)
@@ -31,10 +31,8 @@ def download_file(s3, aws_file_name, local_file):
     except:
         print("failed to download file, " + response)
 
-def checkIfPathDoesntExists(path, folders):
+def checkIfPathDoesntExists(path, bucket, folders):
     for folder in folders:
-        if folder.get_path() == path:
-            return False
-        elif folder.get_bucket() + "/" + folder.get_path() == path:
+        if folder.get_bucket() == bucket and folder.get_path_as_list() == path:
             return False
     return True

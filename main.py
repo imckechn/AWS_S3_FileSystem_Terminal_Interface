@@ -43,59 +43,63 @@ except:
 
 #Get all the buckets and store them in memory
 buckets = []
+files = []
+folders = []
+
 for bucket in response['Buckets']:
     buck = Bucket(bucket["Name"])
     buckets.append(buck)
 
 #Get all the files and store them in memory
-files = []
 for bucket in buckets:
-
     #Get the buckets in the S3 storage from the names we already have
     s3_bucket = s3_res.Bucket(bucket.get_name())
 
     #Loop through the objects in the bucket and create a file object for each one
     objects = s3_bucket.objects.all()
+
+    #If there are no objects in the bucket, then we need to create a folder for the bucket
     for elem in objects:
         file = File()
         file.init_from_s3(elem)
         files.append(file)
 
+
 #Get the folders from the files and store them in memory
-folders = []
 for file in files:
 
     #Create folders from the files
     bucket = file.get_bucket()
-    full_path = file.get_path()
-
-    broken_up_path = full_path.split("/")
-    broken_up_path.insert(0, "")
+    path = file.get_path()
 
     #Loop through each folder one at a time
-    for i in range(len(broken_up_path) - 1):
+    for i in range(len(path)):
 
-        #Create a folder starting at the root and going down
-        path = ""
-        for j in range(i):
-            path += broken_up_path[j] + "/"
-        new_folder = Folder(file.get_bucket(), path)
+        new_folder = Folder(file.get_bucket(), path[:i])
 
         #Check if a folder aleady exists
         for folder in folders:
-            if folder.get_path() == new_folder.get_path() and folder.get_bucket() == new_folder.get_bucket():
+            if folder.get_path_as_list() == new_folder.get_path_as_list() and folder.get_bucket() == new_folder.get_bucket():
                 new_folder = None
-                break
+            break
 
-    folders.append(new_folder)
+        folders.append(new_folder)
+
 
 #The current working directory, this includes the current bucket if applicable
 directory = []
 userInput = ""
 
+print("Available buckets:")
+for bucket in buckets:
+    print(bucket.get_name())
+print("\n")
+
 while(userInput != "exit" or userInput != 'quit'):
+    print("Folders = ", len(folders))
     userInput = input("S5> ")
 
+    #Create a new bucket in s3
     if userInput[:13] == "create_bucket":
         values= userInput.split("/")
 
@@ -108,7 +112,7 @@ while(userInput != "exit" or userInput != 'quit'):
 
         if exists == False:
             try:
-                create_bucket(s3, values[1])
+                create_bucket(s3_res, values[1])
                 buck = Bucket(values[1])
                 buckets.append(buck)
             except:
@@ -123,6 +127,7 @@ while(userInput != "exit" or userInput != 'quit'):
                 path += "/" + folder
             print(path)
 
+    #Change location
     elif userInput[:6] == "chlocn":
             # Identify if the user is trying to go backwards
             if userInput == "chlocn /" or userInput == "chlocn ~":
@@ -163,30 +168,35 @@ while(userInput != "exit" or userInput != 'quit'):
                             directory.append(folder)
 
                 # --- Checking that the current directory exists ---
-
-                # Get the current directory MINUS the bucket
-                cur_der = ""
-                for i in range(1, len(directory)):
-                    cur_der += directory[i] + "/"
-
-
-                cur_der = cur_der[:-1]  #Pop the last '/' off
-
-                print("cur_der: " + cur_der)
-
-                exists = False
-                for folder in folders:
-                    print("folder being checked")
-                    print(folder.get_path()[1:])
-
-                    if folder.get_bucket() == directory[0]: #Check that the bucket matches
-                        if cur_der == folder.get_path():
-                            exists = True
+                if len(directory) == 1:
+                    isValidBucket = False
+                    for bucket in buckets:
+                        if bucket.get_name() == directory[0]:
+                            isValidBucket = True
                             break
 
-                if exists != True:
-                    directory = old_directory
-                    print("Error: Directory doesnt exist")
+                    if isValidBucket == False:
+                        directory = old_directory
+                        print("Error: Invalid bucket")
+
+                else:
+                    # Get the current directory MINUS the bucket
+                    cur_der = ""
+                    for i in range(len(directory)):
+                        cur_der += directory[i] + "/"
+
+                    cur_der = cur_der[:-1]  #Pop the last '/' off
+
+                    exists = False
+                    for folder in folders:
+                        if folder.get_bucket() == directory[0]: #Check that the bucket matches
+                            if cur_der == folder.get_path():
+                                exists = True
+                                break
+
+                    if exists != True:
+                        directory = old_directory
+                        print("Error: Directory doesnt exist")
 
     elif len(directory) > 0:
 
@@ -203,7 +213,6 @@ while(userInput != "exit" or userInput != 'quit'):
 
         elif "locs3cp" in userInput:
             values = userInput.split(" ")
-
             ans = upload_file(s3, values[1], values[2])
 
             if ans == True:
@@ -220,27 +229,32 @@ while(userInput != "exit" or userInput != 'quit'):
 
 
         elif userInput[:13] == "create_folder":
-            path = userInput.split("/")
+            path = userInput.split(" ")
+            path = path[1].split("/")
 
-            #identify if it's a fill or relative path
+            print("Path of foler being created")
+            print(path)
+
+            #identify if it's a fill path
             isFullPath = False
             for i in range(len(buckets)):
-                if buckets[i].get_name() == directory[0]:
+                if buckets[i].get_name() == path[0]:
                     isFullPath = True
+                    print("It's a full path")
 
-                    current_path = ""
-                    for i in range(1, len(path)):
-                        current_path += path[i] + "/"
-                        if checkIfPathDoesntExists(current_path, folders):
-                            new_folder = Folder(path[0], current_path)
+                    for i in range(len(path)):
+                        if checkIfPathDoesntExists(path[:i], folders):
+                            new_folder = Folder(path[0], path[1:i])
                             folders.append(new_folder)
 
             if isFullPath == False: #it's a relative path
-                current_path = ""
-                for i in range(len(path)):
-                    current_path += path[i] + "/"
-                    if checkIfPathDoesntExists(current_path, folders):
-                        new_folder = Folder(directory[0], current_path)
+                for i in range(1, len(path) + 1):
+                    full_path = directory[1:].copy()
+                    for j in range(i):
+                        full_path.append(path[j])
+
+                    if checkIfPathDoesntExists(full_path, directory[0], folders):
+                        new_folder = Folder(directory[0], full_path)
                         folders.append(new_folder)
 
 
@@ -253,7 +267,7 @@ while(userInput != "exit" or userInput != 'quit'):
             elif userInput == "chlocn ..":
                 directory.pop()
 
-            elif userInput == "chlocn ":
+            elif userInput == "chlocn":
                 continue
 
             else:
@@ -375,26 +389,5 @@ exit()
 
 
 # HELPERS
-# locs3cp upload/temp2/temp2.txt /cis4010-a1-ianmckechnie/temp.txt
-# s3loccp /cis4010-a1-ianmckechnie/temp.txt downloaded/temp.txt
-# create_bucket/cis4010b01-ianmckechnie
-
-# create_folder/temp
-# create_folder/temp2/temp3
-# create_folder/cis4010-a1-ianmckechnie/temp3
-
-# chlocn /temp
-# chlocn /
-# chlocn ..
-# chlocn ../..
-# chlocn /temp2
-# chlocn ../temp2/temp3
-
-# list /cis4010/images/cats
-
-
-#LATEST
-# cd cis4010-a1-ianmckechnie
-# create_folder/temp3
-# create_folder/temp2/temp3
-# chlocn /temp2
+# chlocn tempbucketforcisclassguelph
+# create_folder test

@@ -3,6 +3,8 @@ import boto3
 class Folder:
 
     def __init__(self, bucket, path):
+        if type(path) != list:
+            print("ERROR, Wrong format for the folder path")
         self.path = path #Treating path as an array of each folder that is in the path
         self.files = []
         self.bucket = bucket
@@ -11,6 +13,12 @@ class Folder:
         return self.bucket + "/" + self.path
 
     def get_path(self):
+        fullPath = ""
+        for elem in self.path:
+            fullPath += elem + "/"
+        return fullPath
+
+    def get_path_as_list(self):
         return self.path
 
     def get_files(self):
@@ -55,7 +63,14 @@ class Folder:
         return True
 
     def print_next_folder(self, path):
-        if len(path) < (len(self.path) - 1):
-            print(self.path[len(path) - 1])
+        # print("Path")
+        # print(path)
+        # print("path len")
+        # print(len(path))
+        # print("self path")
+        # print(self.path)
+        # print("self path len")
+        # print(len(self.path))
+        print(self.path[len(path) - 1] + "/")
 
 

@@ -3,9 +3,7 @@ import boto3
 
 class File:
 
-    def init_from_file_creation(self, bucket, location):
-        self.bucket = bucket
-
+    def init_from_file_creation(self, location):
         parts = location.split("/")
         self.bucket = parts[0]
 
@@ -19,9 +17,9 @@ class File:
         elements = name.key.split("/")
         self.name = elements[-1]
 
-        path = ""
+        path = []
         for i in range(len(elements) - 1):
-            path += elements[i] + "/"
+            path.append(elements[i])
 
         self.path = path
 
