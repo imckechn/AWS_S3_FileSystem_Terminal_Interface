@@ -96,7 +96,6 @@ for bucket in buckets:
 print("\n")
 
 while(userInput != "exit" or userInput != 'quit'):
-    print("Folders = ", len(folders))
     userInput = input("S5> ")
 
     #Create a new bucket in s3
@@ -150,53 +149,74 @@ while(userInput != "exit" or userInput != 'quit'):
 
                 #identify if it's a fill or relative path
                 isFullPath = False
-
                 for bucket in buckets:
                     if bucket.get_name() == path_values[0]:     #it's the full path
                         isFullPath = True
                         directory = []
 
-                        #Set the working directory to the one specified by the user
-                        for i in range(len(path_values)):
-                            directory.append(path_values[i])
+                        #Check if the user is just navigating into a bucket
+                        if len(path_values) == 1:
+                            bucketExists = False
+                            for bucket in buckets:
+                                if bucket.get_name() == path_values[0]:
+                                    directory.append(bucket.get_name())
+                                    bucketExists = True
+                                    break
 
-                if isFullPath == False:  #it's a relative path
-                    for folder in path_values:
-                        if folder == "..":
-                            directory.pop()
-                        else:
-                            directory.append(folder)
-
-                # --- Checking that the current directory exists ---
-                if len(directory) == 1:
-                    isValidBucket = False
-                    for bucket in buckets:
-                        if bucket.get_name() == directory[0]:
-                            isValidBucket = True
-                            break
-
-                    if isValidBucket == False:
-                        directory = old_directory
-                        print("Error: Invalid bucket")
-
-                else:
-                    # Get the current directory MINUS the bucket
-                    cur_der = ""
-                    for i in range(len(directory)):
-                        cur_der += directory[i] + "/"
-
-                    cur_der = cur_der[:-1]  #Pop the last '/' off
-
-                    exists = False
-                    for folder in folders:
-                        if folder.get_bucket() == directory[0]: #Check that the bucket matches
-                            if cur_der == folder.get_path():
-                                exists = True
+                            if bucketExists == False:
+                                print("Error: Bucket does not exist")
+                                directory = old_directory.copy()
                                 break
 
-                    if exists != True:
-                        directory = old_directory
-                        print("Error: Directory doesnt exist")
+                        else:
+                            if checkIfPathDoesntExists(path_values[1:], path_values[0], folders) == False:
+                                directory = path_values
+                                break
+                            else:
+                                print("Error: Folder does not exist")
+                            break
+
+                            #Set the working directory to the one specified by the user
+                            for i in range(len(path_values)):
+                                directory.append(path_values[i])
+
+                if isFullPath == False:  #it's a relative path
+                    if checkIfPathDoesntExists(full_path[1:], full_path[0], folders) == False:
+                        directory = full_path
+
+                    else:
+                        print("Error: Folder does not exist")
+
+                # # --- Checking that the current directory exists ---
+                # if len(directory) == 1:
+                #     isValidBucket = False
+                #     for bucket in buckets:
+                #         if bucket.get_name() == directory[0]:
+                #             isValidBucket = True
+                #             break
+
+                #     if isValidBucket == False:
+                #         directory = old_directory
+                #         print("Error: Invalid bucket")
+
+                # else:
+                #     # Get the current directory MINUS the bucket
+                #     cur_der = ""
+                #     for i in range(len(directory)):
+                #         cur_der += directory[i] + "/"
+
+                #     cur_der = cur_der[:-1]  #Pop the last '/' off
+
+                #     exists = False
+                #     for folder in folders:
+                #         if folder.get_bucket() == directory[0]: #Check that the bucket matches
+                #             if cur_der == folder.get_path():
+                #                 exists = True
+                #                 break
+
+                #     if exists != True:
+                #         directory = old_directory
+                #         print("Error: Directory doesnt exist")
 
     elif len(directory) > 0:
 
@@ -232,22 +252,19 @@ while(userInput != "exit" or userInput != 'quit'):
             path = userInput.split(" ")
             path = path[1].split("/")
 
-            print("Path of foler being created")
-            print(path)
-
             #identify if it's a fill path
             isFullPath = False
             for i in range(len(buckets)):
                 if buckets[i].get_name() == path[0]:
                     isFullPath = True
-                    print("It's a full path")
 
                     for i in range(len(path)):
-                        if checkIfPathDoesntExists(path[:i], folders):
+                        if checkIfPathDoesntExists(path[:i], path[0], folders):
                             new_folder = Folder(path[0], path[1:i])
                             folders.append(new_folder)
 
             if isFullPath == False: #it's a relative path
+                print("relative")
                 for i in range(1, len(path) + 1):
                     full_path = directory[1:].copy()
                     for j in range(i):
@@ -256,46 +273,6 @@ while(userInput != "exit" or userInput != 'quit'):
                     if checkIfPathDoesntExists(full_path, directory[0], folders):
                         new_folder = Folder(directory[0], full_path)
                         folders.append(new_folder)
-
-
-
-        elif userInput[:6] == "chlocn":
-            # Identify if the user is trying to go backwards
-            if userInput == "chlocn /" or userInput == "chlocn ~":
-                directory = []
-
-            elif userInput == "chlocn ..":
-                directory.pop()
-
-            elif userInput == "chlocn":
-                continue
-
-            else:
-                old_directory = directory.copy()
-
-                userInput = userInput[len("chlocn "):]
-                path_values = userInput.split("/")
-                if path_values[0] == '':
-                    path_values.pop(0)
-
-                #identify if it's a fill or relative path
-                isFullPath = False
-                for bucket in buckets:
-                    if bucket.get_name() == path_values[0]:
-                        isFullPath = True
-
-                        if checkIfPathDoesntExists(path_values[1:], folders) == False:
-                            directory = path_values
-                            break
-                        else:
-                            print("Error: Folder does not exist")
-                if isFullPath == False:
-                    full_path = directory.copy() + path_values
-                    if checkIfPathDoesntExists(full_path, folders) == False:
-                        directory = full_path
-
-                    else:
-                        print("Error: Folder does not exist")
 
         elif userInput[:4] == "list":
 
@@ -389,5 +366,6 @@ exit()
 
 
 # HELPERS
-# chlocn tempbucketforcisclassguelph
+# chlocn /tempbucketforcisclassguelph
 # create_folder test
+# chlocn /test

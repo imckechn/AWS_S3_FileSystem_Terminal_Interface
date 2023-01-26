@@ -32,7 +32,12 @@ def download_file(s3, aws_file_name, local_file):
         print("failed to download file, " + response)
 
 def checkIfPathDoesntExists(path, bucket, folders):
+    print("Given path = ")
+    print(path)
+
     for folder in folders:
+        print("Folder path = ")
+        print(folder.get_path_as_list())
         if folder.get_bucket() == bucket and folder.get_path_as_list() == path:
             return False
     return True

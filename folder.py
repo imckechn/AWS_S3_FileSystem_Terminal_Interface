@@ -12,7 +12,7 @@ class Folder:
     def __str__(self):
         return self.bucket + "/" + self.path
 
-    def get_path(self):
+    def get_path_as_string(self):
         fullPath = ""
         for elem in self.path:
             fullPath += elem + "/"
@@ -40,7 +40,7 @@ class Folder:
                 self.files.remove(file)
 
                 #Set new path on the file
-                success = file.set_path(new_folder.get_bucket(), new_folder.get_path(), s3)
+                success = file.set_path(new_folder.get_bucket(), new_folder.get_path_as_list(), s3)
                 if success == False:
                     return False
 
@@ -53,11 +53,22 @@ class Folder:
         return success
 
     def is_in_directory(self, path):
-        if self.bucket == path[0]:
-            for i in range(1, len(path) - 1):
+        # print("Directory = ")
+        # print(path)
+        # print("self.path")
+        # print(self.path)
+
+        #The bucket name should be the first element in the given path
+        #The lenth of the current path (only folders, not bucket) should be the same as the given path (which includes the bucket)
+        if self.bucket == path[0] and len(self.path) == len(path):
+
+            #Minus one because self.path[-1] is the bucket we are trying to get the name of
+            for i in range (len(self.path) - 1):
                 if self.path[i] != path[i]:
+                    #print("Failed A")
                     return False
         else:
+            #print("Failed B")
             return False
 
         return True
@@ -71,6 +82,7 @@ class Folder:
         # print(self.path)
         # print("self path len")
         # print(len(self.path))
-        print(self.path[len(path) - 1] + "/")
+        print(self.path[-1] + "/")
+        #print(self.path[len(path) - 1] + "/")
 
 
