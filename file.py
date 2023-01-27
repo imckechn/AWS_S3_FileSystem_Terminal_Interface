@@ -65,11 +65,10 @@ class File:
 
     def self_delete(self, s3):
         path = ""
-        for elem in path:
+        for elem in self.path:
             path += elem + "/"
         path += self.name
 
-        print("path " + path)
         response = s3.delete_object(
             Bucket=self.bucket,
             Key=path

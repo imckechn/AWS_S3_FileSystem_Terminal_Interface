@@ -414,6 +414,9 @@ while(userInput != "exit" or userInput != 'quit'):
             parts = userInput.split(" ")
             location = parts[1].split("/")
 
+            if location[0] == "":
+                location.pop(0)
+
             if len(location) == 1:
                 #Delete the file
                 for file in files:
@@ -426,12 +429,13 @@ while(userInput != "exit" or userInput != 'quit'):
                         break
             else:
                 for file in files:
-                    if file.is_in_directory(location):
+                    if file.is_file(location):
                         try:
-                            file.delete(s3)
+                            file.self_delete(s3)
                             files.remove(file)
                         except:
                             print("Error: Could not delete file")
+
         elif userInput[:13] == "delete_bucket":
             parts = userInput.split(" ")
             bucket_name = parts[1]
@@ -484,3 +488,5 @@ exit()
 # chlocn /images/cats
 # S3copy text4.txt /tempbucketforcisclassguelph/images/cats/text6.txt
 # S3copy /tempbucketforcisclassguelph/images/cats/text6.txt /tempbucketforcisclassguelph/text7.txt
+# s3delete text7.txt
+# s3delete /tempbucketforcisclassguelph/images/cats/text6.txt
