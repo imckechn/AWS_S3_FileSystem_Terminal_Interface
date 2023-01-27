@@ -6,12 +6,11 @@ class File:
     def init_from_file_creation(self, location, size):
 
         self.size = size
-        parts = location.split("/")
-        self.bucket = parts[0]
-        self.name = parts[-1]
+        self.bucket = location[0]
+        self.name = location[-1]
 
         try:
-            self.path = parts[1:-1]
+            self.path = location[1:-1]
         except:
             self.path = []
 
@@ -78,3 +77,14 @@ class File:
 
     def get_size(self):
         return self.size
+
+    def is_file(self, path):
+        cur_path = self.path.copy()
+        cur_path.insert(0, self.bucket)
+        cur_path.append(self.name)
+
+        for i in range(len(cur_path)):
+            if cur_path[i] != path[i]:
+                return False
+
+        return True

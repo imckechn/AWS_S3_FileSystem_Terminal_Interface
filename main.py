@@ -352,12 +352,63 @@ while(userInput != "exit" or userInput != 'quit'):
             start = starting_location.split("/")
             end = ending_location.split("/")
 
-            #add the bucket to the start
-            start.insert(0, directory[0])
+            if end[0] == "":
+                end.pop(0)
+            if start[0] == "":
+                start.pop(0)
 
+            #If start position is a relative position, change it to be the full position
+            start_is_rel = True
+            end_is_rel = True
+
+            for bucket in buckets:
+                if bucket.get_name() == start[0]:
+                    start_is_rel = False
+
+                if bucket.get_name() == end[0]:
+                    end_is_rel = False
+
+            if start_is_rel:
+                start = directory.copy() + start
+            if end_is_rel:
+                end = directory.copy() + end
+
+            #Copy the file to the end position
+            success_copying = False
             for file in files:
-                if file.is_in_directory(start):
-                    file.set_path(directory[0], end, s3)
+                if file.is_file(start):
+                    success_copying = True
+                    #Set the local file objects path to the new directory
+                    new_file = File()
+                    new_file.init_from_file_creation(end, file.get_size())
+                    files.append(new_file)
+
+                    # --- Copy the file over on S3 ---
+                    #turn the end position into a string
+                    start_string = ""
+                    for i in range(1, len(start)):
+                        start_string += start[i] + "/"
+
+                    start_string = start_string[:-1]
+
+                    end_string = ""
+                    for i in range(1, len(end)):
+                        end_string += end[i] + "/"
+                    end_string = end_string[:-1]
+
+                    copy_source = {
+                        'Bucket': start[0],
+                        'Key': start_string
+                    }
+                    try:
+                        reponse = s3_res.meta.client.copy(copy_source, end[0], end_string)
+                    except:
+                        files.pop()
+                        print("Error: Could not copy file")
+
+            #Error message if there was an error copying a file
+            if success_copying == False:
+                print("Error: Could not copy file")
 
         elif userInput[:8] == "s3delete":
             parts = userInput.split(" ")
@@ -414,4 +465,22 @@ exit()
 # s3loccp tempbucketforcisclassguelph/images/cats/a.txt few.txt
 # list /tempbucketforcisclassguelph/images/cats
 # list -l /tempbucketforcisclassguelph/images/cats
+# s3copy /cis4010b01/images/cats/pichappycat.png pic001.png
+# s3copy pic001.png /cis4010b1/backups/pic001.png
 
+# TO DO
+# Fix bug in copy function
+# Make code function based intead of if statement based
+# Get all functions to return 1 or 0 depending on success/failure
+# Instead of having cases for relative postion and full position, why not just change them all to full posiiotns?
+
+
+# Copying files
+# chlocn /tempbucketforcisclassguelph
+# S3copy test.txt /tempbucketforcisclassguelph/images/text2.txt
+# S3copy /tempbucketforcisclassguelph/images/text2.txt /tempbucketforcisclassguelph/images/text3.txt
+# S3copy /tempbucketforcisclassguelph/images/text3.txt /tempbucketforcisclassguelph/images/cats/text4.txt
+# S3copy /tempbucketforcisclassguelph/images/cats/text4.txt text5.txt
+# chlocn /images/cats
+# S3copy text4.txt /tempbucketforcisclassguelph/images/cats/text6.txt
+# S3copy /tempbucketforcisclassguelph/images/cats/text6.txt /tempbucketforcisclassguelph/text7.txt
