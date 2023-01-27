@@ -3,10 +3,11 @@ import boto3
 
 class File:
 
-    def init_from_file_creation(self, location):
+    def init_from_file_creation(self, location, size):
+
+        self.size = size
         parts = location.split("/")
         self.bucket = parts[0]
-
         self.name = parts[-1]
 
         try:
@@ -14,11 +15,9 @@ class File:
         except:
             self.path = []
 
-        print("self.path")
-        print(self.path)
-
-    def init_from_s3(self, name):
+    def init_from_s3(self, name, size):
         self.bucket = name.bucket_name
+        self.size = size
 
         elements = name.key.split("/")
         self.name = elements[-1]
@@ -76,3 +75,6 @@ class File:
             Bucket=self.bucket,
             Key=path
         )
+
+    def get_size(self):
+        return self.size

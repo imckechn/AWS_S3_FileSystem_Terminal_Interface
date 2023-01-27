@@ -60,8 +60,10 @@ for bucket in buckets:
 
     #If there are no objects in the bucket, then we need to create a folder for the bucket
     for elem in objects:
+        response = s3.head_object(Bucket=elem.bucket_name, Key=elem.key)
+        size = response['ContentLength']
         file = File()
-        file.init_from_s3(elem)
+        file.init_from_s3(elem, size)
         files.append(file)
 
 
@@ -91,14 +93,14 @@ for file in files:
 directory = []
 userInput = ""
 
-print("Available buckets:")
-for bucket in buckets:
-    print(bucket.get_name())
+# print("Available buckets:")
+# for bucket in buckets:
+#     print(bucket.get_name())
 
 while(userInput != "exit" or userInput != 'quit'):
-    print("Folders")
-    for folder in folders:
-        print(folder.get_path_as_list())
+    # print("Folders")
+    # for folder in folders:
+    #     print(folder.get_path_as_list())
     userInput = input("S5> ")
 
     #Create a new bucket in s3
@@ -150,6 +152,10 @@ while(userInput != "exit" or userInput != 'quit'):
                 if path_values[0] == '':
                     path_values.pop(0)
 
+                if len(path_values) == 0:
+                    print("Error: Invalid path")
+                    continue
+
                 #identify if it's a fill or relative path
                 isFullPath = False
                 for bucket in buckets:
@@ -194,9 +200,6 @@ while(userInput != "exit" or userInput != 'quit'):
         if "locs3cp" in userInput:
             values = userInput.split(" ")
 
-            print("values[2]")
-            print(values[2])
-
             aws_info = values[2].split("/") #It's a three-tuple for some reason with index 0 being an empty string
             bucket = aws_info[1]
             file_name = ""
@@ -205,11 +208,13 @@ while(userInput != "exit" or userInput != 'quit'):
 
             file_name = file_name[:-1]
 
+            file_size = os.path.getsize(values[1])
+
             ans = upload_file(s3, values[1], bucket, file_name)
 
             if ans == True:
                 file = File()
-                file.init_from_file_creation(values[2])
+                file.init_from_file_creation(values[2], file_size)
                 files.append(file)
 
                 #Create a new folder for it if neccessary
@@ -258,7 +263,6 @@ while(userInput != "exit" or userInput != 'quit'):
                             folders.append(new_folder)
 
             if isFullPath == False: #it's a relative path
-                print("relative")
                 for i in range(1, len(path) + 1):
                     full_path = directory[1:].copy()
                     for j in range(i):
@@ -269,24 +273,56 @@ while(userInput != "exit" or userInput != 'quit'):
                         folders.append(new_folder)
 
         elif userInput[:4] == "list":
+            does_print_something = False
 
             #List the current directory
             if userInput == "list" or userInput == "list /":
-                #List the files
+                # List the files
                 for file in files:
                     if file.is_in_directory(directory):
+                        does_print_something = True
                         print(file.get_name())
 
-                #List the folders
+                # List the folders
                 for folder in folders:
                     if folder.is_in_directory(directory):
-                       folder.print_next_folder(directory)
+                        does_print_something = True
+                        folder.print_next_folder(directory)
 
             elif "-l" in userInput:
                 # ----------- NEEDS TO BE WORKED ON -------------
-                print("TBD")
+                elements = userInput.split("/")
+
+                if userInput == "list -l":  #if it's just "list -l", ie. the current directory
+                    # List the files
+                    for file in files:
+                        if file.is_in_directory(directory):
+                            does_print_something = True
+                            print(file.get_name() + " " + str(file.get_size()) + "bytes")
+
+                    # List the folders
+                    for folder in folders:
+                        if folder.is_in_directory(directory):
+                            does_print_something = True
+                            folder.print_next_folder(directory)
+
+                else:   #if it's "list -l /path/to/folder"
+                    elements.pop(0)
+
+                    # List the files
+                    for file in files:
+                        if file.is_in_directory(elements):
+                            does_print_something = True
+                            print(file.get_name() + " " + str(file.get_size()) + "bytes")
+
+                    # List the folders
+                    for folder in folders:
+                        if folder.is_in_directory(elements):
+                            does_print_something = True
+                            folder.print_next_folder(elements)
 
             else:
+
                 elements = userInput.split("/")
                 elements.pop(0)
 
@@ -294,12 +330,18 @@ while(userInput != "exit" or userInput != 'quit'):
                 for file in files:
                     for file in files:
                         if file.is_in_directory(elements):
+                            does_print_something = True
                             file.get_name()
 
                 #List the folders
                 for folder in folders:
                     if folder.is_in_directory(elements):
+                        does_print_something = True
                         folder.print_next_folder(elements)
+
+
+            if does_print_something == False:
+                print("Error: Folder does not exist or is empty")
 
         elif userInput[:6] == "S3copy":
             parts = userInput.split(" ")
@@ -364,9 +406,12 @@ exit()
 # HELPERS
 # chlocn /tempbucketforcisclassguelph
 # create_folder /test/temp/hello/world
-# chlocn /test/temp
+# chlocn /images/cats
 # locs3cp downloaded/temp.txt /tempbucketforcisclassguelph/images/cats/t.txt
 
 # cwlocn
 # s3loccp cis4010-a1-ianmckechnie/temp.txt downloaded/new.txt
 # s3loccp tempbucketforcisclassguelph/images/cats/a.txt few.txt
+# list /tempbucketforcisclassguelph/images/cats
+# list -l /tempbucketforcisclassguelph/images/cats
+
