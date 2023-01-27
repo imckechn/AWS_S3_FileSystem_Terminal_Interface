@@ -225,9 +225,17 @@ while(userInput != "exit" or userInput != 'quit'):
 
 
 
-        elif "s3loccp" in userInput:
+        elif userInput[:7] == "s3loccp":
             values = userInput.split(" ")
-            download_file(s3, values[1], values[2])
+
+            aws_info = values[1].split("/") #It's a three-tuple for some reason with index 0 being an empty string
+            bucket = aws_info[0]
+            file_name = ""
+            for i in range(1, len(aws_info)):
+                file_name += aws_info[i] + "/"
+
+            file_name = file_name[:-1]
+            download_file(s3, values[2], bucket, file_name)
 
 
 
@@ -347,6 +355,8 @@ while(userInput != "exit" or userInput != 'quit'):
     else:
         print("Error: Command not recognized or you are not in a bucket")
 
+    print("\n\n")
+
 print("Goodbye")
 exit()
 
@@ -355,4 +365,8 @@ exit()
 # chlocn /tempbucketforcisclassguelph
 # create_folder /test/temp/hello/world
 # chlocn /test/temp
-# locs3cp downloaded/temp.txt /tempbucketforcisclassguelph/images/cats/temp.txt
+# locs3cp downloaded/temp.txt /tempbucketforcisclassguelph/images/cats/t.txt
+
+# cwlocn
+# s3loccp cis4010-a1-ianmckechnie/temp.txt downloaded/new.txt
+# s3loccp tempbucketforcisclassguelph/images/cats/a.txt few.txt

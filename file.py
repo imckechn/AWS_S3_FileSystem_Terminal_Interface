@@ -56,9 +56,9 @@ class File:
             return False
 
     def is_in_directory(self, path):
-        if self.bucket == path[0]:
-            for i in range(1, len(path) - 1):
-                if self.path[i] != path[i]:
+        if self.bucket == path[0] and len(self.path) == len(path) - 1:
+            for i in range(len(self.path)):
+                if self.path[i] != path[i + 1]:
                     return False
         else:
             return False
