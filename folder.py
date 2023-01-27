@@ -6,7 +6,7 @@ class Folder:
         if type(path) != list:
             print("ERROR, Wrong format for the folder path")
         self.path = path #Treating path as an array of each folder that is in the path
-        self.files = []
+        #self.files = []
         self.bucket = bucket
 
     def __str__(self):
@@ -21,11 +21,11 @@ class Folder:
     def get_path_as_list(self):
         return self.path
 
-    def get_files(self):
-        return self.files
+    # def get_files(self):
+    #     return self.files
 
-    def add_file(self, file):
-        self.files.append(file)
+    # def add_file(self, file):
+    #     self.files.append(file)
 
     def get_bucket(self):
         return self.bucket
@@ -53,17 +53,11 @@ class Folder:
         return success
 
     def is_in_directory(self, path):
-
-
         #The bucket name should be the first element in the given path
         #The lenth of the current path (only folders, not bucket) should be the same as the given path (which includes the bucket)
         if self.bucket == path[0] and len(self.path) == len(path):
-            print("HERE")
             #Minus one because self.path[-1] is the bucket we are trying to get the name of
             for i in range (len(self.path) - 1):
-                print("Being compared")
-                print(self.path[i])
-                print(path[i + 1])
                 if self.path[i] != path[i + 1]:
                     #print("Failed A")
                     return False
@@ -75,5 +69,3 @@ class Folder:
 
     def print_next_folder(self, path):
         print(self.path[-1] + "/")
-
-

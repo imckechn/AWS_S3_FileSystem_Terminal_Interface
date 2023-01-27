@@ -7,9 +7,15 @@ class File:
         parts = location.split("/")
         self.bucket = parts[0]
 
-        self.path = ""
-        for i in range(1, len(parts) - 1):
-            self.path += parts[i] + "/"
+        self.name = parts[-1]
+
+        try:
+            self.path = parts[1:-1]
+        except:
+            self.path = []
+
+        print("self.path")
+        print(self.path)
 
     def init_from_s3(self, name):
         self.bucket = name.bucket_name
@@ -59,5 +65,14 @@ class File:
 
         return True
 
-    def delete(self, s3):
-        s3.Object(self.bucket, self.path + "/" + self.name).delete()
+    def self_delete(self, s3):
+        path = ""
+        for elem in path:
+            path += elem + "/"
+        path += self.name
+
+        print("path " + path)
+        response = s3.delete_object(
+            Bucket=self.bucket,
+            Key=path
+        )

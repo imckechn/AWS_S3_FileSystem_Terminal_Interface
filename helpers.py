@@ -11,11 +11,17 @@ def create_bucket(s3, bucket_name):
 
 # Function to upload a file to S3
 # Params: s3 is the boto3 s3 client, local_file is the path to the file to upload, aws_file_name is the bucket name and name of the file on S3 (like a path)
-def upload_file(s3, local_file, aws_file_name):
+def upload_file(s3, local_file, bucket, aws_file_name):
     aws_info = aws_file_name.split("/") #It's a three-tuple for some reason with index 0 being an empty string
+    bucket = aws_info[1]
+    file_name = ""
+    for i in range(2, len(aws_info)):
+        file_name += aws_info[i] + "/"
+
+    file_name = file_name[:-1]
 
     try:
-        response = s3.upload_file(local_file, aws_info[1], aws_info[2])
+        response = s3.upload_file(local_file, bucket, file_name)
         return True
     except:
         print("failed to upload file, " + response)
@@ -43,16 +49,8 @@ def checkIfPathDoesntExists(path, bucket, folders):
     return True
 
 def FolderInPath(path, bucket, folders):
-    print("Path")
-    print(path)
-    print("Bucket")
-    print(bucket)
-    print("Folders")
-
-
     for folder in folders:
         folderList = folder.get_path_as_list()
-        print(folderList)
 
         if folderList == path and folder.get_bucket() == bucket:
             return True

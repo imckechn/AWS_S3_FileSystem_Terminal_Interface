@@ -75,15 +75,16 @@ for file in files:
     #Loop through each folder one at a time
     for i in range(len(path)):
 
-        new_folder = Folder(file.get_bucket(), path[:i])
+        new_folder = Folder(file.get_bucket(), path[:i + 1])
 
         #Check if a folder aleady exists
         for folder in folders:
             if folder.get_path_as_list() == new_folder.get_path_as_list() and folder.get_bucket() == new_folder.get_bucket():
                 new_folder = None
-            break
+                break
 
-        folders.append(new_folder)
+        if new_folder:
+            folders.append(new_folder)
 
 
 #The current working directory, this includes the current bucket if applicable
@@ -95,9 +96,9 @@ for bucket in buckets:
     print(bucket.get_name())
 
 while(userInput != "exit" or userInput != 'quit'):
-    # print("Folders")
-    # for folder in folders:
-    #     print(folder.get_path_as_list())
+    print("Folders")
+    for folder in folders:
+        print(folder.get_path_as_list())
     userInput = input("S5> ")
 
     #Create a new bucket in s3
@@ -192,12 +193,35 @@ while(userInput != "exit" or userInput != 'quit'):
 
         if "locs3cp" in userInput:
             values = userInput.split(" ")
-            ans = upload_file(s3, values[1], values[2])
+
+            print("values[2]")
+            print(values[2])
+
+            aws_info = values[2].split("/") #It's a three-tuple for some reason with index 0 being an empty string
+            bucket = aws_info[1]
+            file_name = ""
+            for i in range(2, len(aws_info)):
+                file_name += aws_info[i] + "/"
+
+            file_name = file_name[:-1]
+
+            ans = upload_file(s3, values[1], bucket, file_name)
 
             if ans == True:
                 file = File()
                 file.init_from_file_creation(values[2])
                 files.append(file)
+
+                #Create a new folder for it if neccessary
+                new_folder = Folder(file.get_bucket(), file.get_path())
+
+                #Check if a folder aleady exists
+                for folder in folders:
+                    if folder.get_path_as_list() == new_folder.get_path_as_list() and folder.get_bucket() == new_folder.get_bucket():
+                        new_folder = None
+                    break
+
+                folders.append(new_folder)
 
 
 
@@ -243,14 +267,14 @@ while(userInput != "exit" or userInput != 'quit'):
                 #List the files
                 for file in files:
                     if file.is_in_directory(directory):
-                        file.get_name()
+                        print(file.get_name())
 
                 #List the folders
                 for folder in folders:
                     if folder.is_in_directory(directory):
-                        folder.print_next_folder(directory)
+                       folder.print_next_folder(directory)
 
-            elif "-I" in userInput:
+            elif "-l" in userInput:
                 # ----------- NEEDS TO BE WORKED ON -------------
                 print("TBD")
 
@@ -294,7 +318,7 @@ while(userInput != "exit" or userInput != 'quit'):
                 for file in files:
                     if file.get_name() == location[0] and file.get_bucket() == directory[0] and file.is_in_directory(directory):
                         try:
-                            file.delete(s3)
+                            file.self_delete(s3)
                             files.remove(file)
                         except:
                             print("Error: Could not delete file")
@@ -331,3 +355,4 @@ exit()
 # chlocn /tempbucketforcisclassguelph
 # create_folder /test/temp/hello/world
 # chlocn /test/temp
+# locs3cp downloaded/temp.txt /tempbucketforcisclassguelph/images/cats/temp.txt
