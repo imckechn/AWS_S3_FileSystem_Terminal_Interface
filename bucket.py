@@ -10,7 +10,7 @@ class Bucket:
 
     def delete(self, s3):
         try:
-            s3.Bucket(self.name).delete()
-            return True
-        except:
-            return False
+            reponse = s3.Bucket(self.name).delete()
+        except Exception as e: 
+            print("Error, ", e)
+

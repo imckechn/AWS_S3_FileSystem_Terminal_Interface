@@ -15,3 +15,6 @@ Install the AWS SDK for Python (Boto3) using pip or pip3
 ## Usage
 Run the program using python3 or python
 ```python3 main.py```
+
+## Assumptions
+- If a bucket has only empty folder is it, it can still be deleted

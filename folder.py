@@ -21,12 +21,6 @@ class Folder:
     def get_path_as_list(self):
         return self.path
 
-    # def get_files(self):
-    #     return self.files
-
-    # def add_file(self, file):
-    #     self.files.append(file)
-
     def get_bucket(self):
         return self.bucket
 

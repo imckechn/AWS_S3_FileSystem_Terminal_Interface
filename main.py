@@ -198,7 +198,10 @@ while(userInput != "exit" or userInput != 'quit'):
     elif len(directory) > 0:
 
         if "locs3cp" in userInput:
-            values = userInput.split(" ")
+            values = userInput.split("/")
+            print("values")
+            print(values)
+
 
             aws_info = values[2].split("/") #It's a three-tuple for some reason with index 0 being an empty string
             bucket = aws_info[1]
@@ -231,18 +234,50 @@ while(userInput != "exit" or userInput != 'quit'):
 
 
         elif userInput[:7] == "s3loccp":
-            values = userInput.split(" ")
-
-            aws_info = values[1].split("/") #It's a three-tuple for some reason with index 0 being an empty string
-            bucket = aws_info[0]
-            file_name = ""
-            for i in range(1, len(aws_info)):
-                file_name += aws_info[i] + "/"
-
-            file_name = file_name[:-1]
-            download_file(s3, values[2], bucket, file_name)
 
 
+
+            #check if it's a fulll path or relative path, if relative, make it full
+            parts = userInput.split(' ')
+
+            cloud_path_list = parts[1].split('/')
+            local_path_list = parts[2].split('/')
+
+            if cloud_path_list[0] == '':
+                cloud_path_list.pop(0)
+
+            if local_path_list[0] == '':
+                local_path_list.pop(0)
+
+            print("cloud path list")
+            print(cloud_path_list)
+
+            isFullPath = False
+            for bucket in buckets:
+                if bucket.get_name() == cloud_path_list[0]:
+                    isFullPath = True
+                    break
+
+            if isFullPath == False:
+                cloud_path_list = directory.copy() + cloud_path_list
+
+
+            #Get the bucket name, the cloud path, and the local path
+            bucket = cloud_path_list[0]
+            print("cloud path list")
+            print(cloud_path_list)
+            cloud_path = ""
+            for i in range(1, len(cloud_path_list)):
+                cloud_path += cloud_path_list[i] + "/"
+            cloud_path = cloud_path[:-1]
+
+            local_path = ""
+            for i in range(0, len(local_path_list)):
+                local_path += local_path_list[i] + "/"
+            local_path = local_path[:-1]
+
+            #Call download function
+            download_file(s3, local_path, bucket, cloud_path)
 
         elif userInput[:13] == "create_folder":
             path = userInput.split(" ")
@@ -273,20 +308,17 @@ while(userInput != "exit" or userInput != 'quit'):
                         folders.append(new_folder)
 
         elif userInput[:4] == "list":
-            does_print_something = False
 
             #List the current directory
             if userInput == "list" or userInput == "list /":
                 # List the files
                 for file in files:
                     if file.is_in_directory(directory):
-                        does_print_something = True
                         print(file.get_name())
 
                 # List the folders
                 for folder in folders:
                     if folder.is_in_directory(directory):
-                        does_print_something = True
                         folder.print_next_folder(directory)
 
             elif "-l" in userInput:
@@ -297,13 +329,11 @@ while(userInput != "exit" or userInput != 'quit'):
                     # List the files
                     for file in files:
                         if file.is_in_directory(directory):
-                            does_print_something = True
                             print(file.get_name() + " " + str(file.get_size()) + "bytes")
 
                     # List the folders
                     for folder in folders:
                         if folder.is_in_directory(directory):
-                            does_print_something = True
                             folder.print_next_folder(directory)
 
                 else:   #if it's "list -l /path/to/folder"
@@ -312,13 +342,11 @@ while(userInput != "exit" or userInput != 'quit'):
                     # List the files
                     for file in files:
                         if file.is_in_directory(elements):
-                            does_print_something = True
                             print(file.get_name() + " " + str(file.get_size()) + "bytes")
 
                     # List the folders
                     for folder in folders:
                         if folder.is_in_directory(elements):
-                            does_print_something = True
                             folder.print_next_folder(elements)
 
             else:
@@ -330,18 +358,12 @@ while(userInput != "exit" or userInput != 'quit'):
                 for file in files:
                     for file in files:
                         if file.is_in_directory(elements):
-                            does_print_something = True
                             file.get_name()
 
                 #List the folders
                 for folder in folders:
                     if folder.is_in_directory(elements):
-                        does_print_something = True
                         folder.print_next_folder(elements)
-
-
-            if does_print_something == False:
-                print("Error: Folder does not exist or is empty")
 
         elif userInput[:6] == "S3copy":
             parts = userInput.split(" ")
@@ -402,9 +424,9 @@ while(userInput != "exit" or userInput != 'quit'):
                     }
                     try:
                         reponse = s3_res.meta.client.copy(copy_source, end[0], end_string)
-                    except:
+                    except Exception as e: 
+                        print("Error, ", e)
                         files.pop()
-                        print("Error: Could not copy file")
 
             #Error message if there was an error copying a file
             if success_copying == False:
@@ -437,22 +459,32 @@ while(userInput != "exit" or userInput != 'quit'):
                             print("Error: Could not delete file")
 
         elif userInput[:13] == "delete_bucket":
-            parts = userInput.split(" ")
+            parts = userInput.split("/")
+
+            print("parts: " + str(parts))
             bucket_name = parts[1]
 
+            if bucket_name == directory[0]:
+                print("Error, you cannot delete the bucket you are currently in")
+                continue
+
+            removed = False
             for bucket in buckets:
                 if bucket.get_name() == bucket_name:
+                    #bucket.delete(s3_res)
                     try:
-                        bucket.delete(s3)
+                        bucket.delete(s3_res)
                         buckets.remove(bucket)
-                    except:
-                        print("Error: Could not delete bucket")
-                    break
+                        removed = True
+                        continue
+                    except Exception as e: 
+                        print("Error, ", e)
+
+            if removed == False:
+                print("Error: Could not find bucket")
 
     else:
         print("Error: Command not recognized or you are not in a bucket")
-
-    print("\n\n")
 
 print("Goodbye")
 exit()
@@ -473,7 +505,7 @@ exit()
 # s3copy pic001.png /cis4010b1/backups/pic001.png
 
 # TO DO
-# Fix bug in copy function
+# Test copy to local function
 # Make code function based intead of if statement based
 # Get all functions to return 1 or 0 depending on success/failure
 # Instead of having cases for relative postion and full position, why not just change them all to full posiiotns?
@@ -490,3 +522,8 @@ exit()
 # S3copy /tempbucketforcisclassguelph/images/cats/text6.txt /tempbucketforcisclassguelph/text7.txt
 # s3delete text7.txt
 # s3delete /tempbucketforcisclassguelph/images/cats/text6.txt
+# delete_bucket /cis4010-a1-ianmckechnie
+
+# Copying cloud file to local system
+# chlocn /tempbucketforcisclassguelph
+# s3loccp text5.txt downloaded/text5.txt
