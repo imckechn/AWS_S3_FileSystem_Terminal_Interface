@@ -1,38 +1,7 @@
-
-import configparser
-import os
-import sys
-import pathlib
-import boto3
 from folder import Folder
 from file import File
 from bucket import Bucket
 
-# Function to upload a file to S3
-# Params: s3 is the boto3 s3 client, local_file is the path to the file to upload, aws_file_name is the bucket name and name of the file on S3 (like a path)
-def upload_file(s3, local_file, bucket, aws_file_name):
-    try:
-        s3.upload_file(local_file, bucket, aws_file_name)
-        return True
-    except Exception as e:
-        print("Error, ", e)
-        return False
-
-# Function to download a file from S3
-# Params: s3 is the boto3 s3 client, local_file is the path to where the file will be downloaded from, aws_file_name is the bucket name and name of the file on S3 (like a path)
-def download_file(s3, local_file, bucket, aws_file_name):
-    try:
-        s3.download_file(bucket, aws_file_name, local_file)
-        return True
-    except Exception as e:
-        print("Error, ", e)
-        return False
-
-def checkIfPathDoesntExists(path, bucket, folders):
-    for folder in folders:
-        if folder.get_bucket() == bucket and folder.get_path_as_list() == path:
-            return False
-    return True
 
 def folderInPath(path, bucket, folders):
     for folder in folders:
@@ -42,57 +11,12 @@ def folderInPath(path, bucket, folders):
             return True
     return False
 
-def get_buckets_files_folders(s3, s3_res):
-    buckets = []
-    files = []
-    folders = []
-    response = s3.list_buckets()
 
-    for bucket in response['Buckets']:
-        if bucket["Name"] == "cis4010-a1-ianmckechnie":
-            continue
-        buck = Bucket(bucket["Name"])
-        buckets.append(buck)
-
-    #Get all the files and store them in memory
-    for bucket in buckets:
-        #Get the buckets in the S3 storage from the names we already have
-        s3_bucket = s3_res.Bucket(bucket.get_name())
-
-        #Loop through the objects in the bucket and create a file object for each one
-        objects = s3_bucket.objects.all()
-
-        #If there are no objects in the bucket, then we need to create a folder for the bucket
-        for elem in objects:
-            response = s3.head_object(Bucket=elem.bucket_name, Key=elem.key)
-            size = response['ContentLength']
-            file = File()
-            file.init_from_s3(elem, size)
-            files.append(file)
-
-
-    #Get the folders from the files and store them in memory
-    for file in files:
-
-        #Create folders from the files
-        bucket = file.get_bucket()
-        path = file.get_path()
-
-        #Loop through each folder one at a time
-        for i in range(len(path)):
-
-            new_folder = Folder(file.get_bucket(), path[:i + 1])
-
-            #Check if a folder aleady exists
-            for folder in folders:
-                if folder.get_path_as_list() == new_folder.get_path_as_list() and folder.get_bucket() == new_folder.get_bucket():
-                    new_folder = None
-                    break
-
-            if new_folder:
-                folders.append(new_folder)
-
-    return buckets, files, folders
+def checkIfPathDoesntExists(path, bucket, folders):
+    for folder in folders:
+        if folder.get_bucket() == bucket and folder.get_path_as_list() == path:
+            return False
+    return True
 
 
 def create_bucket(s3_res, userInput, buckets):
@@ -113,16 +37,40 @@ def create_bucket(s3_res, userInput, buckets):
         print("Error, ", e)
         return 1
 
-def get_current_location(directory):
-    if directory == []:
-        print("/")
-    else:
-        path = ""
-        for folder in directory:
-            path += "/" + folder
-        print(path)
 
-    return 0
+def create_folder(userInput, buckets, folders, directory):
+    path = userInput.split(" ")
+    path = path[1].split("/")
+
+    if path[0] == '':
+        path.pop(0)
+
+    #identify if it's a fill path
+    isFullPath = False
+    for i in range(len(buckets)):
+        if buckets[i].get_name() == path[0]:
+            isFullPath = True
+
+            for i in range(len(path)):
+                if checkIfPathDoesntExists(path[:i], path[0], folders):
+                    new_folder = Folder(path[0], path[1:i])
+                    folders.append(new_folder)
+                    return 0
+
+    if isFullPath == False: #it's a relative path
+        for i in range(1, len(path) + 1):
+            full_path = directory[1:].copy()
+            for j in range(i):
+                full_path.append(path[j])
+
+            if checkIfPathDoesntExists(full_path, directory[0], folders):
+                new_folder = Folder(directory[0], full_path)
+                folders.append(new_folder)
+                return 0
+
+    print("Error: Folder already exists")
+    return 1
+
 
 def change_location(userInput, directory, buckets, folders):
     # Identify if the user is trying to go backwards
@@ -194,126 +142,71 @@ def change_location(userInput, directory, buckets, folders):
             else:
                 print("Error: Folder does not exist")
 
-def copy_local_file_to_s3(userInput, s3, files, folders):
-    values = userInput.split(" ")
 
-    if len(values) != 3:
-        print("Error: Invalid number of arguments")
-        return 1
-
-    local_destination = values[1]
-
-    aws_info = values[2].split("/") #It's a three-tuple for some reason with index 0 being an empty string
-
-    if aws_info[0] == '':
-        aws_info.pop(0)
-
-    bucket = aws_info[0]
-    file_name = ""
-    for i in range(1, len(aws_info)):
-        file_name += aws_info[i] + "/"
-
-    file_name = file_name[:-1]
-
-    file_size = os.path.getsize(local_destination)
-
-    ans = upload_file(s3, local_destination, bucket, file_name)
-
-    if ans == True:
-        file = File()
-        file.init_from_file_creation(values[2].split("/"), file_size)
-        files.append(file)
-
-        #Create a new folder for it if neccessary
-        new_folder = Folder(file.get_bucket(), file.get_path())
-
-        #Check if a folder aleady exists
-        for folder in folders:
-            if folder.get_path_as_list() == new_folder.get_path_as_list() and folder.get_bucket() == new_folder.get_bucket():
-                new_folder = None
-            break
-
-        if new_folder:
-            folders.append(new_folder)
-        return 0
-
+def get_current_location(directory):
+    if directory == []:
+        print("/")
     else:
-        return 1
+        path = ""
+        for folder in directory:
+            path += "/" + folder
+        print(path)
 
-def copy_s3_file_to_local(userInput, s3, buckets, directory):
-    #check if it's a fulll path or relative path, if relative, make it full
-    parts = userInput.split(' ')
-
-    cloud_path_list = parts[1].split('/')
-    local_path_list = parts[2].split('/')
-
-    if cloud_path_list[0] == '':
-        cloud_path_list.pop(0)
-
-    if local_path_list[0] == '':
-        local_path_list.pop(0)
-
-    isFullPath = False
-    for bucket in buckets:
-        if bucket.get_name() == cloud_path_list[0]:
-            isFullPath = True
-            break
-
-    if isFullPath == False:
-        cloud_path_list = directory.copy() + cloud_path_list
-
-
-    #Get the bucket name, the cloud path, and the local path
-    bucket = cloud_path_list[0]
-    cloud_path = ""
-    for i in range(1, len(cloud_path_list)):
-        cloud_path += cloud_path_list[i] + "/"
-    cloud_path = cloud_path[:-1]
-
-    local_path = ""
-    for i in range(0, len(local_path_list)):
-        local_path += local_path_list[i] + "/"
-    local_path = local_path[:-1]
-
-    #Call download function
-    ans = download_file(s3, local_path, bucket, cloud_path)
-
-    if ans == False:
-        return 1
     return 0
 
-def create_folder(userInput, buckets, folders, directory):
-    path = userInput.split(" ")
-    path = path[1].split("/")
 
-    if path[0] == '':
-        path.pop(0)
+def get_buckets_files_folders(s3, s3_res):
+    buckets = []
+    files = []
+    folders = []
+    response = s3.list_buckets()
 
-    #identify if it's a fill path
-    isFullPath = False
-    for i in range(len(buckets)):
-        if buckets[i].get_name() == path[0]:
-            isFullPath = True
+    for bucket in response['Buckets']:
+        if bucket["Name"] == "cis4010-a1-ianmckechnie":
+            continue
+        buck = Bucket(bucket["Name"])
+        buckets.append(buck)
 
-            for i in range(len(path)):
-                if checkIfPathDoesntExists(path[:i], path[0], folders):
-                    new_folder = Folder(path[0], path[1:i])
-                    folders.append(new_folder)
-                    return 0
+    #Get all the files and store them in memory
+    for bucket in buckets:
+        #Get the buckets in the S3 storage from the names we already have
+        s3_bucket = s3_res.Bucket(bucket.get_name())
 
-    if isFullPath == False: #it's a relative path
-        for i in range(1, len(path) + 1):
-            full_path = directory[1:].copy()
-            for j in range(i):
-                full_path.append(path[j])
+        #Loop through the objects in the bucket and create a file object for each one
+        objects = s3_bucket.objects.all()
 
-            if checkIfPathDoesntExists(full_path, directory[0], folders):
-                new_folder = Folder(directory[0], full_path)
+        #If there are no objects in the bucket, then we need to create a folder for the bucket
+        for elem in objects:
+            response = s3.head_object(Bucket=elem.bucket_name, Key=elem.key)
+            size = response['ContentLength']
+            file = File()
+            file.init_from_s3(elem, size)
+            files.append(file)
+
+    #Get the folders from the files and store them in memory
+    for file in files:
+
+        #Create folders from the files
+        bucket = file.get_bucket()
+        path = file.get_path()
+
+        #Loop through each folder one at a time
+        for i in range(len(path)):
+
+            new_folder = Folder(file.get_bucket(), path[:i + 1])
+
+            #Check if a folder aleady exists
+            for folder in folders:
+                if folder.get_path_as_list() == new_folder.get_path_as_list() and folder.get_bucket() == new_folder.get_bucket():
+                    new_folder = None
+                    break
+
+            if new_folder:
                 folders.append(new_folder)
-                return 0
 
-    print("Error: Folder already exists")
-    return 1
+    return buckets, files, folders
+
+
 
 def copy_folder(userInput, buckets, directory, files, s3_res):
     parts = userInput.split(" ")
@@ -385,6 +278,7 @@ def copy_folder(userInput, buckets, directory, files, s3_res):
         return 1
     return 0
 
+
 def delete_file(userInput, files, directory,s3):
     parts = userInput.split(" ")
     location = parts[1].split("/")
@@ -414,6 +308,7 @@ def delete_file(userInput, files, directory,s3):
                     return 1
     return 0
 
+
 def delete_bucket(userInput, directory, buckets, s3_res):
     parts = userInput.split("/")
 
@@ -438,6 +333,7 @@ def delete_bucket(userInput, directory, buckets, s3_res):
     if removed == False:
         print("Error: Could not find bucket")
         return 1
+
 
 def list_files_and_folders(userInput, files, folders, directory):
     #List the current directory
