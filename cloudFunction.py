@@ -89,6 +89,14 @@ def change_location(userInput, directory, buckets, folders):
         return 1
 
     else:
+        #Check for the .. case
+        if ".."  in userInput:
+            count = userInput.count("..")
+            for i in range(count):
+                directory.pop()
+            return 0
+
+
         old_directory = directory.copy()
 
         userInput = userInput[len("chlocn "):]
@@ -335,9 +343,15 @@ def delete_bucket(userInput, directory, buckets, s3_res):
         return 1
 
 
-def list_files_and_folders(userInput, files, folders, directory):
+def list_files_and_folders(userInput, buckets, files, folders, directory):
+
     #List the current directory
     if userInput == "list" or userInput == "list /":
+        if len(directory) == 0:
+            for bucket in buckets:
+                print(bucket.get_name())
+            return 0
+
         # List the files
         for file in files:
             if file.is_in_directory(directory):
@@ -349,7 +363,11 @@ def list_files_and_folders(userInput, files, folders, directory):
                 folder.print_next_folder(directory)
 
     elif "-l" in userInput:
-        # ----------- NEEDS TO BE WORKED ON -------------
+        if len(directory) == 0:
+            for bucket in buckets:
+                print(bucket.get_name())
+            return 0
+
         elements = userInput.split("/")
 
         if userInput == "list -l":  #if it's just "list -l", ie. the current directory
@@ -381,10 +399,14 @@ def list_files_and_folders(userInput, files, folders, directory):
         elements.pop(0)
 
         #List the files
-        for file in files:
+        if len(directory) == 0:
+            for file in files:
+                if file.get_bucket() == elements[0] and file.is_in_directory(elements):
+                    print(file.get_name())
+        else:
             for file in files:
                 if file.is_in_directory(elements):
-                    file.get_name()
+                    print(file.get_name())
 
         #List the folders
         for folder in folders:

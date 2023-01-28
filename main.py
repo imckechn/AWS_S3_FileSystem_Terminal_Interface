@@ -11,8 +11,8 @@ from bucket import Bucket
 
 config = configparser.ConfigParser()
 config.read("S5-S3.conf")
-aws_access_key_id = config['prof' ]['aws_access_key_id' ]
-aws_secret_access_key = config['prof']['aws_secret_access_key']
+aws_access_key_id = config['default' ]['aws_access_key_id' ]
+aws_secret_access_key = config['default']['aws_secret_access_key']
 
 #Try making a connection to S3 using boto3
 try:
@@ -42,44 +42,47 @@ userInput = ""
 while(userInput != "exit" or userInput != 'quit'):
     userInput = input("S5> ")
 
-    #Create a new bucket in s3
-    if userInput[:13] == "create_bucket":
-        answer = cloudFunction.create_bucket(s3_res, userInput, buckets)
+    try:
 
-    elif userInput[:6] == "cwlocn":
-        answer = cloudFunction.get_current_location(directory)
+        #Create a new bucket in s3
+        if userInput[:13] == "create_bucket":
+            answer = cloudFunction.create_bucket(s3_res, userInput, buckets)
 
-    #Change location
-    elif userInput[:6] == "chlocn":
+        #Change location
+        elif userInput[:6] == "chlocn":
             answer = cloudFunction.change_location(userInput, directory, buckets, folders)
 
-    elif len(directory) > 0:
-
-        if userInput[:7] == "locs3cp":
-            answer = localFunctions.copy_local_file_to_s3(userInput, s3, files, folders)
-
-        elif userInput[:7] == "s3loccp":
-            answer = localFunctions.copy_s3_file_to_local(userInput, s3, buckets, directory)
-
-        elif userInput[:13] == "create_folder":
-            answer = cloudFunction.create_folder(userInput, buckets, folders, directory)
-            continue
-
         elif userInput[:4] == "list":
-            answer = cloudFunction.list_files_and_folders(userInput, files, folders, directory)
-            continue
+            answer = cloudFunction.list_files_and_folders(userInput, buckets, files, folders, directory)
 
-        elif userInput[:6] == "S3copy":
-            answer = cloudFunction.copy_folder(userInput, buckets, directory, files, s3_res)
+        elif len(directory) > 0:
 
-        elif userInput[:8] == "s3delete":
-            answer = cloudFunction.delete_file(userInput, files, directory,s3)
+            if userInput[:7] == "locs3cp":
+                answer = localFunctions.copy_local_file_to_s3(userInput, s3, files, folders)
 
-        elif userInput[:13] == "delete_bucket":
-            answer = cloudFunction.delete_bucket(userInput, directory, buckets, s3_res)
+            elif userInput[:6] == "cwlocn":
+                answer = cloudFunction.get_current_location(directory)
 
-    else:
-        print("Error: Command not recognized or you are not in a bucket")
+            elif userInput[:7] == "s3loccp":
+                answer = localFunctions.copy_s3_file_to_local(userInput, s3, buckets, directory)
+
+            elif userInput[:13] == "create_folder":
+                answer = cloudFunction.create_folder(userInput, buckets, folders, directory)
+
+            elif userInput[:6] == "S3copy":
+                answer = cloudFunction.copy_folder(userInput, buckets, directory, files, s3_res)
+
+            elif userInput[:8] == "s3delete":
+                answer = cloudFunction.delete_file(userInput, files, directory,s3)
+
+            elif userInput[:13] == "delete_bucket":
+                answer = cloudFunction.delete_bucket(userInput, directory, buckets, s3_res)
+
+        else:
+            print("Error: Command not recognized or you are not in a bucket")
+    except:
+        continue
+
 
 print("Goodbye")
 exit()
